@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配件專區陳列建議</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --blue: #0071e3; --green: #34c759; --red: #ff3b30;
+  --orange: #ff9500; --purple: #af52de; --teal: #5ac8fa;
+  --gray: #8e8e93; --bg: #f5f5f7; --card: #fff; --text: #1d1d1f; --sub: #6e6e73;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro", sans-serif; background: var(--bg); color: var(--text); }
+
+header { background: linear-gradient(135deg,#1c1c1e,#2c2c2e); color:#fff; padding:28px 20px 22px; text-align:center; }
+header h1 { font-size:26px; font-weight:700; }
+header p { font-size:13px; color:#aeaeb2; margin-top:5px; }
+.period-badge { display:inline-block; margin-top:10px; background:rgba(0,113,227,.3); border:1px solid rgba(0,113,227,.5); border-radius:8px; padding:3px 14px; font-size:12px; color:#64b5f6; }
+
+.tab-nav { display:flex; background:#1c1c1e; padding:0 20px; border-bottom:1px solid #3a3a3c; overflow-x:auto; gap:4px; }
+.tab-btn { padding:11px 18px; font-size:13px; font-weight:500; color:#aeaeb2; border:none; background:none; cursor:pointer; white-space:nowrap; border-bottom:3px solid transparent; transition:.2s; }
+.tab-btn.active { color:#fff; border-bottom-color:var(--blue); }
+
+.container { max-width:1080px; margin:0 auto; padding:20px 14px 48px; }
+.section-title { font-size:20px; font-weight:700; margin:28px 0 14px; display:flex; align-items:center; gap:10px; }
+.badge { font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; }
+.badge-ok { background:#d4f5e2; color:#1a7a3e; }
+.badge-warn { background:#fef9e0; color:#8a6100; }
+.badge-alert { background:#fce8e6; color:#c5221f; }
+.badge-info { background:#d2e3fc; color:#1557b0; }
+
+.card { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.card + .card { margin-top:14px; }
+
+/* STATS ROW */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media(max-width:700px){ .stats-row { grid-template-columns:repeat(2,1fr); } }
+.stat-card { background:var(--card); border-radius:14px; padding:16px 14px; box-shadow:0 2px 6px rgba(0,0,0,.05); }
+.stat-label { font-size:12px; color:var(--sub); }
+.stat-value { font-size:28px; font-weight:700; margin-top:4px; }
+
+/* TABLE */
+.sales-table { width:100%; border-collapse:collapse; font-size:13px; }
+.sales-table thead th { background:#f5f5f7; padding:10px 12px; text-align:left; font-size:12px; font-weight:600; color:var(--sub); border-bottom:2px solid #e5e5ea; white-space:nowrap; }
+.sales-table tbody tr { border-bottom:1px solid #f0f0f0; transition:background .15s; }
+.sales-table tbody tr:hover { background:#f9f9fb; }
+.sales-table td { padding:10px 12px; vertical-align:middle; }
+.rank-badge { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; font-size:12px; font-weight:700; }
+.rank-1 { background:#ffd700; color:#7a5c00; }
+.rank-2 { background:#c0c0c0; color:#4a4a4a; }
+.rank-3 { background:#cd7f32; color:#fff; }
+.rank-other { background:#e5e5ea; color:#6e6e73; }
+.cat-chip { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+
+/* CATEGORY COLORS */
+.cat-充電器 { background:#fff3e0; color:#e65100; }
+.cat-充電線 { background:#e8f5e9; color:#2e7d32; }
+.cat-行動電源 { background:#e3f2fd; color:#1565c0; }
+.cat-觸控筆 { background:#f3e5f5; color:#6a1b9a; }
+.cat-Lightning線 { background:#fce4ec; color:#880e4f; }
+.cat-保護殼 { background:#e0f7fa; color:#006064; }
+.cat-無線充電 { background:#f1f8e9; color:#33691e; }
+
+.qty-bar-wrap { display:flex; align-items:center; gap:8px; }
+.qty-bar-track { flex:1; background:#e5e5ea; border-radius:99px; height:6px; overflow:hidden; }
+.qty-bar-fill { height:100%; border-radius:99px; background:var(--blue); }
+.qty-num { font-weight:700; min-width:24px; text-align:right; }
+.amt-val { font-weight:700; color:var(--green); }
+
+/* FILTER BAR */
+.filter-bar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; align-items:center; }
+.filter-chip { padding:5px 14px; border-radius:20px; font-size:12px; border:1.5px solid #e5e5ea; background:#fff; cursor:pointer; transition:.15s; font-weight:500; }
+.filter-chip.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+.search-box { padding:6px 14px; border-radius:20px; border:1.5px solid #e5e5ea; font-size:13px; outline:none; min-width:200px; }
+.search-box:focus { border-color:var(--blue); }
+
+/* DISPLAY SECTION */
+.display-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:700px){ .display-grid { grid-template-columns:1fr; } }
+.display-photo { border-radius:14px; overflow:hidden; }
+.display-photo img { width:100%; display:block; border-radius:14px; }
+
+/* RECOMMENDATION */
+.rec { border-radius:14px; padding:16px 18px; margin-bottom:12px; border-left:5px solid; }
+.rec.critical { background:#fef0f0; border-color:var(--red); }
+.rec.warning  { background:#fffbe6; border-color:var(--orange); }
+.rec.positive { background:#f0faf5; border-color:var(--green); }
+.rec.action   { background:#f0f5ff; border-color:var(--blue); }
+.rec-tag { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; }
+.rec-title { font-size:15px; font-weight:700; margin-bottom:5px; }
+.rec-body { font-size:13px; line-height:1.7; color:#3a3a3c; }
+.rec-body ul { padding-left:16px; }
+.rec-body li { margin-bottom:3px; }
+
+/* UPDATE PANEL */
+.update-panel { background:#fff; border-radius:16px; padding:20px; border:2px dashed #e5e5ea; }
+.update-panel h3 { font-size:16px; font-weight:700; margin-bottom:10px; }
+.update-steps { font-size:13px; line-height:2; color:#3a3a3c; }
+.update-steps code { background:#f5f5f7; padding:1px 6px; border-radius:4px; font-family:monospace; font-size:12px; }
+
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
+
+/* Sticky table header */
+.table-wrap { overflow-x:auto; }
+
+/* ── Update Form ── */
+.update-section { margin-bottom:28px; }
+.update-section h3 { font-size:16px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.form-row { display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+.form-label { font-size:13px; font-weight:600; color:var(--sub); min-width:80px; }
+.form-input { padding:8px 12px; border:1.5px solid #e5e5ea; border-radius:10px; font-size:13px; outline:none; font-family:inherit; }
+.form-input:focus { border-color:var(--blue); }
+.form-input.wide { flex:1; min-width:180px; }
+.form-select { padding:8px 12px; border:1.5px solid #e5e5ea; border-radius:10px; font-size:13px; background:#fff; outline:none; cursor:pointer; }
+.form-select:focus { border-color:var(--blue); }
+.btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border-radius:10px; font-size:13px; font-weight:600; border:none; cursor:pointer; transition:.15s; }
+.btn-primary { background:var(--blue); color:#fff; }
+.btn-primary:hover { background:#0062c4; }
+.btn-danger  { background:#fff0f0; color:var(--red); border:1.5px solid #ffd5d2; }
+.btn-danger:hover { background:#fde8e7; }
+.btn-success { background:#f0faf5; color:#1a7a3e; border:1.5px solid #b8edce; }
+.btn-success:hover { background:#d4f5e2; }
+.btn-gray    { background:#f5f5f7; color:var(--text); border:1.5px solid #e5e5ea; }
+.btn-gray:hover { background:#e5e5ea; }
+.btn-sm { padding:5px 12px; font-size:12px; border-radius:8px; }
+
+/* Edit table */
+.edit-table { width:100%; border-collapse:collapse; font-size:13px; }
+.edit-table th { background:#f5f5f7; padding:8px 10px; text-align:left; font-size:12px; font-weight:600; color:var(--sub); border-bottom:2px solid #e5e5ea; white-space:nowrap; }
+.edit-table td { padding:6px 8px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+.edit-table tr:hover td { background:#fafafa; }
+.edit-input { width:100%; padding:5px 8px; border:1.5px solid #e5e5ea; border-radius:7px; font-size:12px; font-family:inherit; outline:none; }
+.edit-input:focus { border-color:var(--blue); }
+.edit-input.num { width:70px; text-align:right; }
+
+/* Photo upload */
+.photo-drop { border:2.5px dashed #d0d0d5; border-radius:14px; padding:32px; text-align:center; cursor:pointer; transition:.2s; background:#fafafa; }
+.photo-drop:hover, .photo-drop.dragover { border-color:var(--blue); background:#f0f5ff; }
+.photo-drop .drop-icon { font-size:40px; margin-bottom:8px; }
+.photo-drop p { font-size:13px; color:var(--sub); }
+.photo-preview { border-radius:12px; overflow:hidden; margin-top:12px; }
+.photo-preview img { width:100%; max-height:320px; object-fit:cover; display:block; }
+
+/* Status toggle buttons */
+.status-toggle { display:inline-flex; gap:4px; }
+.stbtn { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; border:none; cursor:pointer; opacity:.45; transition:.15s; }
+.stbtn.active { opacity:1; }
+.stbtn.present { background:#d4f5e2; color:#1a7a3e; }
+.stbtn.missing { background:#fce8e6; color:#c5221f; }
+.stbtn.poor    { background:#fffbe6; color:#8a6100; }
+
+/* Toast */
+.toast { position:fixed; bottom:28px; right:24px; background:#1d1d1f; color:#fff; padding:12px 20px; border-radius:12px; font-size:14px; font-weight:600; z-index:9999; opacity:0; transform:translateY(12px); transition:.3s; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* Save bar */
+.save-bar { position:sticky; bottom:0; background:rgba(255,255,255,.95); backdrop-filter:blur(8px); border-top:1px solid #e5e5ea; padding:12px 20px; display:flex; gap:10px; align-items:center; z-index:100; }
+
+/* ── Excel 拖放 ── */
+.excel-drop {
+  border: 2.5px dashed #b0c8e8; border-radius: 16px;
+  background: linear-gradient(135deg,#f0f7ff,#fafcff);
+  padding: 36px 20px; text-align: center; cursor: pointer;
+  transition: .2s; position: relative;
+}
+.excel-drop:hover, .excel-drop.dragover {
+  border-color: var(--blue); background: linear-gradient(135deg,#e0eeff,#f5faff);
+  box-shadow: 0 0 0 4px rgba(0,113,227,.08);
+}
+.excel-drop .xls-icon { font-size: 48px; margin-bottom: 10px; display: block; }
+.excel-drop .xls-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.excel-drop .xls-sub   { font-size: 13px; color: var(--sub); margin-top: 6px; }
+.excel-drop .xls-types { display:inline-flex; gap:8px; margin-top:12px; }
+.xls-badge { background:#e8f5e9; color:#2e7d32; border-radius:20px; padding:3px 12px; font-size:12px; font-weight:600; }
+.xls-badge.xls { background:#e3f2fd; color:#1565c0; }
+
+/* 欄位映射 */
+.col-map-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:14px; }
+@media(max-width:700px){ .col-map-grid { grid-template-columns:1fr 1fr; } }
+.col-map-item { }
+.col-map-item label { font-size:12px; font-weight:600; color:var(--sub); display:block; margin-bottom:4px; }
+.col-map-item .col-required { color:var(--red); }
+
+/* 預覽表格 */
+.preview-wrap { max-height: 280px; overflow-y:auto; border-radius:10px; border:1px solid #e5e5ea; }
+.preview-table { width:100%; border-collapse:collapse; font-size:12px; }
+.preview-table th { position:sticky; top:0; background:#f5f5f7; padding:7px 10px; text-align:left; font-weight:600; color:var(--sub); border-bottom:1px solid #e5e5ea; white-space:nowrap; z-index:1; }
+.preview-table td { padding:6px 10px; border-bottom:1px solid #f0f0f0; white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+.preview-table tr:hover td { background:#fafafa; }
+.preview-ok  { background:#f0faf5; }
+.preview-skip{ background:#fff8f0; color:#999; }
+
+/* 步驟指示器 */
+.step-bar { display:flex; align-items:center; gap:0; margin-bottom:20px; }
+.step { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#c0c0c8; }
+.step.active { color:var(--blue); }
+.step.done   { color:var(--green); }
+.step-num { width:24px; height:24px; border-radius:50%; background:#e5e5ea; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+.step.active .step-num { background:var(--blue); color:#fff; }
+.step.done   .step-num { background:var(--green); color:#fff; }
+.step-line { flex:1; height:2px; background:#e5e5ea; min-width:20px; }
+.step.done ~ .step-line { background:var(--green); }
+</style>
+</head>
+<body>
+
+<!-- ── 密碼保護覆蓋層 ── -->
+<div id="authOverlay" style="
+  position:fixed;inset:0;z-index:99999;
+  background:linear-gradient(135deg,#1c1c1e,#2c2c2e);
+  display:flex;align-items:center;justify-content:center;
+">
+  <div style="
+    background:#fff;border-radius:24px;padding:40px 36px;
+    width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);
+  ">
+    <div style="font-size:48px;margin-bottom:8px">🍎</div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:4px">配件專區陳列建議</div>
+    <div style="font-size:13px;color:#8e8e93;margin-bottom:28px">右昌 Apple Shop</div>
+    <input id="pwInput" type="password" placeholder="請輸入密碼" style="
+      width:100%;padding:12px 16px;border:1.5px solid #e5e5ea;border-radius:12px;
+      font-size:15px;outline:none;font-family:inherit;text-align:center;margin-bottom:12px;
+    " onkeydown="if(event.key==='Enter')checkAuth()">
+    <div id="pwErr" style="font-size:13px;color:#ff3b30;min-height:18px;margin-bottom:10px"></div>
+    <button onclick="checkAuth()" style="
+      width:100%;padding:12px;background:#0071e3;color:#fff;border:none;
+      border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;
+    ">進入</button>
+  </div>
+</div>
+
+<script>
+const PW_HASH = '68997045ee10058582d6cc256ba37f8f3e365097aa79d17691155962e6485aa4';
+if (sessionStorage.getItem('acc_auth') === PW_HASH) {
+  document.getElementById('authOverlay').style.display = 'none';
+}
+async function checkAuth() {
+  const val = document.getElementById('pwInput').value;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val));
+  const hash = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if (hash === PW_HASH) {
+    sessionStorage.setItem('acc_auth', PW_HASH);
+    document.getElementById('authOverlay').style.display = 'none';
+  } else {
+    document.getElementById('pwErr').textContent = '密碼錯誤，請再試一次';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+</script>
+
+<header>
+  <h1>🍎 配件專區陳列建議</h1>
+  <p>右昌 Apple Shop ｜ 副廠配件銷售分析 × 陳列建議</p>
+  <div class="period-badge">銷售期間：2026/01/24 – 2026/04/24（3個月）</div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('rank')">📊 銷售排行 TOP 15</button>
+  <button class="tab-btn" onclick="switchTab('chart')">📈 圖表分析</button>
+  <button class="tab-btn" onclick="switchTab('display')">🛒 花車陳列</button>
+  <button class="tab-btn" onclick="switchTab('recommend')">💡 建議行動</button>
+  <button class="tab-btn" onclick="switchTab('update')">🔄 更新資料</button>
+</nav>
+
+<!-- ============ TAB 1: 銷售排行 ============ -->
+<div id="tab-rank" class="tab-content active">
+<div class="container">
+
+  <div class="section-title">整體銷售概況</div>
+  <div class="stats-row" id="statsRow"></div>
+
+  <div class="section-title" style="margin-top:24px">副廠配件 銷售前15名
+    <span class="badge badge-info">類別 03100000~03100599 ｜ 排除保護貼</span>
+  </div>
+
+  <div class="card" style="padding:16px">
+    <div class="filter-bar">
+      <span style="font-size:12px;color:var(--sub);font-weight:600">篩選類別：</span>
+      <button class="filter-chip active" onclick="filterCat('all',this)">全部</button>
+      <button class="filter-chip" onclick="filterCat('充電器',this)">充電器</button>
+      <button class="filter-chip" onclick="filterCat('充電線',this)">充電線</button>
+      <button class="filter-chip" onclick="filterCat('行動電源',this)">行動電源</button>
+      <button class="filter-chip" onclick="filterCat('觸控筆',this)">觸控筆</button>
+      <button class="filter-chip" onclick="filterCat('Lightning線',this)">Lightning線</button>
+      <button class="filter-chip" onclick="filterCat('保護殼',this)">保護殼</button>
+      <input class="search-box" id="searchBox" placeholder="🔍 搜尋品名 / 貨號" oninput="renderTable()">
+    </div>
+    <div class="table-wrap">
+      <table class="sales-table">
+        <thead>
+          <tr>
+            <th>排名</th><th>貨號</th><th>類別</th><th>品名</th>
+            <th onclick="sortBy('qty')" style="cursor:pointer">銷售數量 ↕</th>
+            <th onclick="sortBy('amt')" style="cursor:pointer">銷售金額 ↕</th>
+            <th>佔比</th>
+          </tr>
+        </thead>
+        <tbody id="salesTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ============ TAB 2: 圖表 ============ -->
+<div id="tab-chart" class="tab-content">
+<div class="container">
+  <div class="section-title">銷售數量排行圖</div>
+  <div class="card"><div style="height:360px"><canvas id="chartQty"></canvas></div></div>
+
+  <div class="section-title">銷售金額排行圖</div>
+  <div class="card"><div style="height:360px"><canvas id="chartAmt"></canvas></div></div>
+
+  <div class="section-title">類別銷售比較</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card"><div style="height:260px"><canvas id="chartCatQty"></canvas></div></div>
+    <div class="card"><div style="height:260px"><canvas id="chartCatAmt"></canvas></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ============ TAB 3: 花車陳列 ============ -->
+<div id="tab-display" class="tab-content">
+<div class="container">
+
+  <div class="section-title">目前花車陳列照片</div>
+  <div class="display-grid">
+    <div>
+      <div class="card display-photo">
+        <img src="display_current.jpg" alt="花車陳列照片" onerror="this.style.display='none';document.getElementById('noPhoto').style.display='block'">
+        <div id="noPhoto" style="display:none;padding:40px;text-align:center;color:var(--sub)">📷 照片未找到<br><small>請將最新照片命名為 display_current.jpg 放入同資料夾</small></div>
+      </div>
+      <div class="card" style="margin-top:12px; font-size:12px; color:var(--sub)">
+        📅 拍攝日期：2026/04/11 ｜ 花車陳列全景
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div style="font-size:14px; font-weight:700; margin-bottom:12px">📋 陳列現況快速評估</div>
+        <div id="displayCheck"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:20px">陳列分析對照表</div>
+  <div class="card">
+    <table class="sales-table">
+      <thead>
+        <tr><th>銷售排名</th><th>品名</th><th>類別</th><th>銷售量</th><th>陳列狀態評估</th><th>建議</th></tr>
+      </thead>
+      <tbody id="displayAnalysisBody"></tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<!-- ============ TAB 4: 建議 ============ -->
+<div id="tab-recommend" class="tab-content">
+<div class="container">
+
+  <div class="section-title">陳列改善建議 <span class="badge badge-alert">依銷售數據</span></div>
+
+  <div class="rec critical">
+    <div class="rec-tag" style="color:var(--red)">🚨 立即調整</div>
+    <div class="rec-title">充電器（6款入榜）是最大銷售力，必須佔花車最顯眼位置</div>
+    <div class="rec-body">
+      排名 4、5、8、9、12、13 全是充電器，合計 87 件 / 47,019 元，佔前15名總量 38%。
+      <ul>
+        <li>將充電器移至花車<strong>正面中央第一排</strong>，視線高度展示</li>
+        <li>大通 70W（黑/白）、35W 應並排陳列，標示「快充 GaN 氮化鎵」標牌</li>
+        <li>ADAM 35W 放在旁邊對比，突出「多品牌可選」</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rec critical">
+    <div class="rec-tag" style="color:var(--red)">🚨 立即調整</div>
+    <div class="rec-title">STM iPad 觸控筆（排名第1）單價最高×銷售最多，需給最佳位置</div>
+    <div class="rec-body">
+      單件 951 元，銷售 20 件 = 19,020 元。目前在類別 03100007 唯一入榜品項，競品少，轉換率高。
+      <ul>
+        <li>放置花車<strong>最高點或正前方架上</strong>，避免埋在堆疊中</li>
+        <li>旁邊加小卡片說明「支援 Apple Pencil 功能、磁吸充電」</li>
+        <li>搭配 iPad 保護殼展示，創造連帶購買</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rec warning">
+    <div class="rec-tag" style="color:#8a6100">⚡ 優先處理</div>
+    <div class="rec-title">充電線（排名 2、3）與 Lightning 線（排名 7、11）需分區清楚標示</div>
+    <div class="rec-body">
+      充電線 4 款合計 64 件，但 Type-C 線與 Lightning 線容易被消費者搞混。
+      <ul>
+        <li>用不同色標籤區分：<strong>Type-C（綠色）/ Lightning（粉色）</strong></li>
+        <li>LoopLoop 磁吸式充電傳輸線 3入組是入榜最高性價比品，應標示「3合1超值組」</li>
+        <li>Lightning 線建議放在 iPhone 配件區，強調相容 iPhone</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rec warning">
+    <div class="rec-tag" style="color:#8a6100">⚡ 優先處理</div>
+    <div class="rec-title">ADAM 行動電源（排名 6、10）金額前三高，需強調「薄型磁吸」特點</div>
+    <div class="rec-body">
+      兩款合計 29 件，金額高達 42,910 元，是金額貢獻前三名。
+      <ul>
+        <li>行動電源放在花車第二層（次顯眼），附「磁吸 MagSafe 相容」說明</li>
+        <li>銀色與黑色並排，強調「兩色可選」</li>
+        <li>可搭配標價牌，標示「最薄行動電源」USP</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rec action">
+    <div class="rec-tag" style="color:#1557b0">📐 陳列原則</div>
+    <div class="rec-title">花車陳列應遵循「銷售排行由前到後、由上到下」原則</div>
+    <div class="rec-body">
+      <ul>
+        <li><strong>第一排正面：</strong>充電器（最多人買）+ STM 觸控筆（最高單價）</li>
+        <li><strong>第二排中間：</strong>行動電源（高金額）+ 充電線（高量）</li>
+        <li><strong>第三排後方：</strong>Lightning 線 + 保護殼（UAG / PG）</li>
+        <li>每款商品確保<strong>至少 2 個面朝外</strong>可見</li>
+        <li>每月更新完銷售數據後，重新評估排列順序</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rec positive">
+    <div class="rec-tag" style="color:#1a7a3e">✅ 優勢維持</div>
+    <div class="rec-title">大通品牌多品入榜（5款）— 建議設立品牌專區</div>
+    <div class="rec-body">
+      大通有充電器（70W黑/白、35W黑、20W白、48W白）共 5 款入榜，合計 71 件 / 39,177 元。
+      <ul>
+        <li>可設立「大通快充專區」集中展示，提升品牌辨識</li>
+        <li>旁邊放 ADAM 品牌，形成「兩大品牌直接比較」的選購場景</li>
+        <li>這種集中展示可縮短選購時間，提升成交率</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ============ TAB 5: 更新資料 ============ -->
+<div id="tab-update" class="tab-content">
+<div class="container">
+
+  <!-- 報告期間 -->
+  <div class="section-title">🗓 報告期間</div>
+  <div class="card">
+    <div class="form-row">
+      <span class="form-label">開始日期</span>
+      <input id="periodStart" class="form-input" type="date">
+      <span style="color:var(--sub)">～</span>
+      <input id="periodEnd" class="form-input" type="date">
+    </div>
+  </div>
+
+  <!-- 花車照片上傳 -->
+  <div class="section-title" style="margin-top:24px">📷 花車照片更新</div>
+  <div class="card">
+    <div class="photo-drop" id="photoDrop" onclick="document.getElementById('photoInput').click()"
+         ondragover="event.preventDefault();this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="handlePhotoDrop(event)">
+      <div class="drop-icon">📸</div>
+      <p><strong>點擊選擇照片</strong>，或將照片拖拽到此處</p>
+      <p style="margin-top:4px;font-size:12px">支援 JPG / PNG / HEIC，建議橫向拍攝</p>
+    </div>
+    <input id="photoInput" type="file" accept="image/*" style="display:none" onchange="handlePhotoSelect(event)">
+    <div id="photoPreview" class="photo-preview" style="display:none">
+      <img id="photoPreviewImg" src="" alt="花車照片預覽">
+      <div style="padding:8px 10px;font-size:12px;color:var(--sub);display:flex;justify-content:space-between;align-items:center">
+        <span id="photoPreviewLabel">新照片</span>
+        <button class="btn btn-danger btn-sm" onclick="removePhoto()">移除照片</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 銷售數據匯入 -->
+  <div class="section-title" style="margin-top:24px">📥 銷售數據匯入</div>
+  <div class="card" id="importCard">
+
+    <!-- 步驟指示器 -->
+    <div class="step-bar" id="stepBar">
+      <div class="step active" id="step1"><div class="step-num">1</div>拖入 Excel</div>
+      <div class="step-line"></div>
+      <div class="step" id="step2"><div class="step-num">2</div>欄位對應</div>
+      <div class="step-line"></div>
+      <div class="step" id="step3"><div class="step-num">3</div>預覽確認</div>
+      <div class="step-line"></div>
+      <div class="step" id="step4"><div class="step-num">4</div>匯入完成</div>
+    </div>
+
+    <!-- Step 1：拖放區 -->
+    <div id="xlsDropZone">
+      <div class="excel-drop" id="excelDrop"
+           onclick="document.getElementById('excelFileInput').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleExcelDrop(event)">
+        <span class="xls-icon">📊</span>
+        <div class="xls-title">將 Excel 檔案拖放到此處</div>
+        <div class="xls-sub">或點擊選擇檔案</div>
+        <div class="xls-types">
+          <span class="xls-badge xls">.xls</span>
+          <span class="xls-badge">.xlsx</span>
+          <span class="xls-badge">.csv</span>
+        </div>
+      </div>
+      <input id="excelFileInput" type="file" accept=".xls,.xlsx,.csv" style="display:none" onchange="handleExcelFile(event)">
+      <div id="xlsLoadMsg" style="text-align:center;margin-top:10px;font-size:13px;color:var(--sub);display:none">
+        ⏳ 解析中，請稍候…
+      </div>
+    </div>
+
+    <!-- Step 2：欄位對應 -->
+    <div id="xlsMapZone" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:15px;font-weight:700" id="xlsFileName">檔案名稱</div>
+          <div style="font-size:12px;color:var(--sub);margin-top:2px" id="xlsSheetInfo"></div>
+        </div>
+        <button class="btn btn-gray btn-sm" onclick="resetImport()">↩ 重新選擇</button>
+      </div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">請對應各欄位 <span style="color:var(--red);font-weight:400">*必填</span></div>
+      <div class="col-map-grid" id="colMapGrid"></div>
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="font-size:13px;color:var(--sub)">類別篩選（選填）：留空 = 預設範圍 03100000~03100599</div>
+        <input id="catFilter" class="form-input" placeholder="留空=預設範圍" style="width:140px">
+        <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="excludeProtector" checked> 排除保護貼／贈品
+        </label>
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" onclick="previewImport()">👁 預覽匯入結果</button>
+      </div>
+    </div>
+
+    <!-- Step 3：預覽 -->
+    <div id="xlsPreviewZone" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div id="previewSummary" style="font-size:13px;font-weight:600"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-gray btn-sm" onclick="backToMap()">← 返回調整</button>
+          <button class="btn btn-primary" onclick="confirmImport()">✅ 確認匯入</button>
+        </div>
+      </div>
+      <div class="preview-wrap">
+        <table class="preview-table">
+          <thead><tr id="previewHead"></tr></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--sub)">
+        <span style="background:#f0faf5;padding:2px 8px;border-radius:4px;margin-right:6px">✅ 綠色</span>列入排行
+        <span style="background:#fff8f0;padding:2px 8px;border-radius:4px;margin-left:10px;margin-right:6px">略過</span>不符篩選條件
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 銷售排行編輯（細項微調） -->
+  <div class="section-title" style="margin-top:24px">📊 銷售排行細項微調</div>
+  <div class="card" style="padding:14px">
+    <div style="overflow-x:auto">
+      <table class="edit-table">
+        <thead>
+          <tr>
+            <th style="width:36px">排名</th>
+            <th>貨號</th>
+            <th style="min-width:200px">品名</th>
+            <th>類別名稱</th>
+            <th>類別代碼</th>
+            <th>銷售數量</th>
+            <th>銷售金額</th>
+            <th style="width:40px"></th>
+          </tr>
+        </thead>
+        <tbody id="editTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 陳列狀態編輯 -->
+  <div class="section-title" style="margin-top:24px">🛒 陳列狀態更新
+    <span class="badge badge-info" style="font-weight:400;font-size:11px">點擊按鈕切換狀態</span>
+  </div>
+  <div class="card" style="padding:14px">
+    <div style="overflow-x:auto">
+      <table class="edit-table">
+        <thead>
+          <tr><th>排名</th><th style="min-width:180px">品名</th><th>陳列狀態</th><th style="min-width:180px">備註</th></tr>
+        </thead>
+        <tbody id="displayEditBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- 儲存列 -->
+<div class="save-bar">
+  <span style="font-size:13px;color:var(--sub)" id="lastSavedLabel">尚未儲存</span>
+  <div style="flex:1"></div>
+  <button class="btn btn-gray" onclick="resetToDefault()">↩ 還原預設</button>
+  <button class="btn btn-primary" onclick="saveAll()">💾 儲存並套用</button>
+</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<footer>右昌 Apple Shop 配件專區陳列建議 ｜ 由 CC 生成 ｜ 2026/04/25</footer>
+
+<script>
+// ═══════════════════════════════════════════
+//  預設資料（首次載入使用）
+// ═══════════════════════════════════════════
+const DEFAULT_PERIOD   = { start:"2026-01-24", end:"2026-04-24" };
+const DEFAULT_SALES = [
+  { rank:1,  item_no:"264165", cat:"03100007", name:"STM iPad 磁吸智能觸控筆-白",           qty:20, amt:19020, catLabel:"觸控筆" },
+  { rank:2,  item_no:"257458", cat:"03100006", name:"LoopLoop 磁吸式充電傳輸線3入組",        qty:19, amt:7980,  catLabel:"充電線" },
+  { rank:3,  item_no:"250826", cat:"03100006", name:"綠聯 USB-C快充線 Aluminum BRAID-1M",  qty:18, amt:3692,  catLabel:"充電線" },
+  { rank:4,  item_no:"253104", cat:"03100005", name:"大通 快充2C1A 氮化鎵70W 充電器-黑",    qty:17, amt:11702, catLabel:"充電器" },
+  { rank:5,  item_no:"235576", cat:"03100005", name:"ADAM OMNIA X35A 35W 1C1A 充電器-白",  qty:16, amt:7840,  catLabel:"充電器" },
+  { rank:6,  item_no:"261907", cat:"03100004", name:"ADAM VIONTA L10 行動電源10000mAh-銀", qty:16, amt:23740, catLabel:"行動電源" },
+  { rank:7,  item_no:"204191", cat:"03100010", name:"大通 USB-A to Lightning充電線 1M-灰", qty:15, amt:6985,  catLabel:"Lightning線" },
+  { rank:8,  item_no:"240929", cat:"03100005", name:"大通 快充1C1A 氮化鎵35W 充電器-黑",   qty:15, amt:6600,  catLabel:"充電器" },
+  { rank:9,  item_no:"253103", cat:"03100005", name:"大通 快充2C1A 氮化鎵70W 充電器-白",    qty:15, amt:10349, catLabel:"充電器" },
+  { rank:10, item_no:"261906", cat:"03100004", name:"ADAM VIONTA L10 行動電源10000mAh-黑", qty:13, amt:19170, catLabel:"行動電源" },
+  { rank:11, item_no:"197339", cat:"03100010", name:"ADAM USB-C to Lightning傳輸線1.2m-黑",qty:12, amt:6280,  catLabel:"Lightning線" },
+  { rank:12, item_no:"243814", cat:"03100005", name:"大通 快充1C1A 20W電源供應器-白",       qty:12, amt:4308,  catLabel:"充電器" },
+  { rank:13, item_no:"246767", cat:"03100005", name:"大通 雙TypeC 快充48W電源供應器-白",    qty:12, amt:7220,  catLabel:"充電器" },
+  { rank:14, item_no:"261976", cat:"03100104", name:"UAG i17 全透保護殼-極透明",            qty:12, amt:8820,  catLabel:"保護殼" },
+  { rank:15, item_no:"253115", cat:"03100003", name:"PG AW 46mm 2in1 高透鋼化保護殼-黑",   qty:11, amt:4970,  catLabel:"保護殼" },
+];
+const DEFAULT_DISPLAY = [
+  { rank:1,  name:"STM iPad 磁吸智能觸控筆",       status:"poor",    note:"應移至最顯眼位置" },
+  { rank:2,  name:"LoopLoop 磁吸充電傳輸線3入組",  status:"present", note:"確認面朝外可見" },
+  { rank:3,  name:"綠聯 USB-C快充線 BRAID",        status:"present", note:"與 LoopLoop 分區標示" },
+  { rank:4,  name:"大通 70W 充電器-黑",            status:"present", note:"正面中央，標 GaN" },
+  { rank:5,  name:"ADAM 35W 充電器-白",            status:"present", note:"與大通並排對比" },
+  { rank:6,  name:"ADAM 行動電源 10000mAh-銀",     status:"present", note:"附磁吸說明牌" },
+  { rank:7,  name:"大通 Lightning充電線 1M",        status:"present", note:"標明 iPhone 相容" },
+  { rank:8,  name:"大通 35W 充電器-黑",            status:"poor",    note:"目前與其他充電器混放" },
+  { rank:9,  name:"大通 70W 充電器-白",            status:"present", note:"與黑色版並排" },
+  { rank:10, name:"ADAM 行動電源 10000mAh-黑",     status:"present", note:"銀黑並排增加選擇感" },
+  { rank:11, name:"ADAM Lightning傳輸線-黑",        status:"poor",    note:"應移至 iPhone 配件區" },
+  { rank:12, name:"大通 20W 充電器-白",            status:"present", note:"入門款標明適合一般用戶" },
+  { rank:13, name:"大通 48W 充電器-白",            status:"poor",    note:"高功率款應有標示說明" },
+  { rank:14, name:"UAG i17 全透保護殼",            status:"missing", note:"目前花車未見到，需補上" },
+  { rank:15, name:"PG AW 46mm 保護殼",             status:"missing", note:"Apple Watch 配件需標示" },
+];
+
+// ═══════════════════════════════════════════
+//  localStorage 讀取（優先使用已儲存資料）
+// ═══════════════════════════════════════════
+function load(key, def) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; }
+}
+function isValidSalesData(d) {
+  if (!Array.isArray(d) || d.length === 0) return false;
+  const maxQty = Math.max(...d.map(x => x.qty || 0));
+  // 單品最高銷售量不應超過 2000（3個月門市），超過代表是合計列或整批資料
+  if (maxQty > 2000) return false;
+  // 必須有 name 欄且不全為亂碼（含合法中文/英文）
+  if (!d[0].name || !/[\u4e00-\u9fff\w]/.test(d[0].name)) return false;
+  return true;
+}
+
+let SALES_DATA    = load('acc_sales',   DEFAULT_SALES);
+if (!isValidSalesData(SALES_DATA)) {
+  SALES_DATA = JSON.parse(JSON.stringify(DEFAULT_SALES));
+  localStorage.removeItem('acc_sales');
+}
+let DISPLAY_ITEMS = load('acc_display', DEFAULT_DISPLAY);
+// 同樣驗證 DISPLAY_ITEMS（名稱亂碼時自動清除）
+if (!Array.isArray(DISPLAY_ITEMS) || DISPLAY_ITEMS.length === 0 ||
+    !DISPLAY_ITEMS[0].name || !/[\u4e00-\u9fff\w]/.test(DISPLAY_ITEMS[0].name)) {
+  DISPLAY_ITEMS = JSON.parse(JSON.stringify(DEFAULT_DISPLAY));
+  localStorage.removeItem('acc_display');
+}
+let PERIOD        = load('acc_period',  DEFAULT_PERIOD);
+let PHOTO_B64     = load('acc_photo',   null);   // base64 string or null
+let LAST_SAVED    = localStorage.getItem('acc_saved') || null;
+
+// ═══════════════════════════════════════════
+//  全局狀態
+// ═══════════════════════════════════════════
+let currentCat = 'all', sortField = 'qty', sortDir = -1;
+let pendingPhotoB64 = null;   // 尚未儲存的新照片
+Chart.defaults.font.family = '-apple-system, sans-serif';
+
+// ── 類別顏色 ──
+function catColor(label) {
+  const map = { '充電器':'#ff9500','充電線':'#34c759','行動電源':'#0071e3',
+    '觸控筆':'#af52de','Lightning線':'#ff6b8a','保護殼':'#5ac8fa','無線充電':'#30b0c7' };
+  return map[label] || '#8e8e93';
+}
+
+// ── 報告期間格式 ──
+function fmtPeriod() {
+  return `${PERIOD.start.replace(/-/g,'/')} – ${PERIOD.end.replace(/-/g,'/')}`;
+}
+
+// ═══════════════════════════════════════════
+//  TAB 1 — 銷售排行
+// ═══════════════════════════════════════════
+function renderStats() {
+  const totalQty = SALES_DATA.reduce((a,b)=>a+b.qty,0);
+  const totalAmt = SALES_DATA.reduce((a,b)=>a+b.amt,0);
+  const topItem  = SALES_DATA[0];
+  const cats     = [...new Set(SALES_DATA.map(d=>d.catLabel))];
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="stat-label">前${SALES_DATA.length}名合計銷售量</div><div class="stat-value" style="color:var(--blue)">${totalQty}</div><div style="font-size:12px;color:var(--sub);margin-top:4px">件</div></div>
+    <div class="stat-card"><div class="stat-label">前${SALES_DATA.length}名合計銷售額</div><div class="stat-value" style="color:var(--green)">${(totalAmt/10000).toFixed(1)}萬</div><div style="font-size:12px;color:var(--sub);margin-top:4px">元</div></div>
+    <div class="stat-card"><div class="stat-label">銷售冠軍</div><div class="stat-value sm" style="font-size:16px;margin-top:6px">${topItem.name.slice(0,14)}</div><div style="font-size:12px;color:var(--sub);margin-top:4px">${topItem.qty}件 / ${topItem.catLabel}</div></div>
+    <div class="stat-card"><div class="stat-label">涉及類別數</div><div class="stat-value" style="color:var(--purple)">${cats.length}</div><div style="font-size:12px;color:var(--sub);margin-top:4px">${cats.slice(0,4).join(' · ')}</div></div>
+  `;
+  document.querySelectorAll('.period-badge').forEach(el => el.textContent = '銷售期間：' + fmtPeriod());
+}
+
+function renderTable() {
+  const search = document.getElementById('searchBox').value.toLowerCase();
+  let data = SALES_DATA.filter(d => {
+    const matchCat    = currentCat === 'all' || d.catLabel === currentCat;
+    const matchSearch = !search || d.name.toLowerCase().includes(search) || d.item_no.includes(search);
+    return matchCat && matchSearch;
+  });
+  data.sort((a,b) => (a[sortField]-b[sortField]) * sortDir);
+  const maxQty = Math.max(...SALES_DATA.map(d=>d.qty));
+  const total  = SALES_DATA.reduce((a,b)=>a+b.qty,0);
+  document.getElementById('salesTableBody').innerHTML = data.map(d => `
+    <tr>
+      <td><span class="rank-badge ${d.rank<=3?'rank-'+d.rank:'rank-other'}">${d.rank}</span></td>
+      <td style="font-family:monospace;font-size:12px">${d.item_no}</td>
+      <td><span class="cat-chip cat-${d.catLabel}">${d.catLabel}</span></td>
+      <td style="font-size:13px;max-width:240px">${d.name}</td>
+      <td>
+        <div class="qty-bar-wrap">
+          <div class="qty-bar-track"><div class="qty-bar-fill" style="width:${d.qty/maxQty*100}%;background:${catColor(d.catLabel)}"></div></div>
+          <span class="qty-num">${d.qty}</span>
+        </div>
+      </td>
+      <td class="amt-val">$${d.amt.toLocaleString()}</td>
+      <td style="font-size:12px;color:var(--sub)">${(d.qty/total*100).toFixed(1)}%</td>
+    </tr>`).join('');
+}
+
+function filterCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderTable();
+}
+function sortBy(field) {
+  if(sortField===field) sortDir*=-1; else { sortField=field; sortDir=-1; }
+  renderTable();
+}
+
+// ═══════════════════════════════════════════
+//  TAB 2 — 圖表
+// ═══════════════════════════════════════════
+let chartsInited = false, chartInstances = [];
+function renderCharts() {
+  chartInstances.forEach(c=>c.destroy());
+  chartInstances = [];
+  const names  = SALES_DATA.map(d=>d.name.length>12?d.name.slice(0,12)+'…':d.name);
+  const colors = SALES_DATA.map(d=>catColor(d.catLabel));
+
+  chartInstances.push(new Chart(document.getElementById('chartQty'),{
+    type:'bar', data:{ labels:names, datasets:[{data:SALES_DATA.map(d=>d.qty),backgroundColor:colors,borderRadius:6,borderSkipped:false}] },
+    options:{ indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}} }
+  }));
+  chartInstances.push(new Chart(document.getElementById('chartAmt'),{
+    type:'bar', data:{ labels:names, datasets:[{data:SALES_DATA.map(d=>d.amt),backgroundColor:colors,borderRadius:6,borderSkipped:false}] },
+    options:{ indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString()}}} }
+  }));
+
+  const catMap = {};
+  SALES_DATA.forEach(d=>{ if(!catMap[d.catLabel]) catMap[d.catLabel]={qty:0,amt:0}; catMap[d.catLabel].qty+=d.qty; catMap[d.catLabel].amt+=d.amt; });
+  const cl=Object.keys(catMap), cc=cl.map(catColor);
+  chartInstances.push(new Chart(document.getElementById('chartCatQty'),{
+    type:'doughnut', data:{labels:cl,datasets:[{data:cl.map(c=>catMap[c].qty),backgroundColor:cc,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:'類別銷售量佔比'}}}
+  }));
+  chartInstances.push(new Chart(document.getElementById('chartCatAmt'),{
+    type:'doughnut', data:{labels:cl,datasets:[{data:cl.map(c=>catMap[c].amt),backgroundColor:cc,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:'類別銷售額佔比'}}}
+  }));
+}
+
+// ═══════════════════════════════════════════
+//  TAB 3 — 花車陳列
+// ═══════════════════════════════════════════
+function renderDisplayAnalysis() {
+  const statusMap = { present:'✅ 有陳列', missing:'❌ 未陳列', poor:'⚠️ 位置不佳' };
+  const colorMap  = { present:'#d4f5e2', missing:'#fce8e6', poor:'#fffbe6' };
+  const textMap   = { present:'#1a7a3e', missing:'#c5221f', poor:'#8a6100' };
+
+  // 顯示照片（優先 localStorage base64，次之 display_current.jpg）
+  const photoEl = document.querySelector('#tab-display .display-photo img');
+  const noPhotoEl = document.getElementById('noPhoto');
+  if (PHOTO_B64) {
+    photoEl.src = PHOTO_B64; photoEl.style.display='block'; if(noPhotoEl) noPhotoEl.style.display='none';
+  }
+
+  document.getElementById('displayAnalysisBody').innerHTML = DISPLAY_ITEMS.map(d=>`
+    <tr>
+      <td><span class="rank-badge ${d.rank<=3?'rank-'+d.rank:'rank-other'}">${d.rank}</span></td>
+      <td style="font-size:13px">${d.name}</td>
+      <td><span class="cat-chip cat-${SALES_DATA[d.rank-1]?.catLabel||''}">${SALES_DATA[d.rank-1]?.catLabel||''}</span></td>
+      <td style="font-weight:700">${SALES_DATA[d.rank-1]?.qty||''}</td>
+      <td style="background:${colorMap[d.status]};color:${textMap[d.status]};font-weight:600;font-size:13px;border-radius:8px;padding:6px 10px;text-align:center">${statusMap[d.status]}</td>
+      <td style="font-size:12px;color:var(--sub)">${d.note}</td>
+    </tr>`).join('');
+
+  const counts = {present:0,missing:0,poor:0};
+  DISPLAY_ITEMS.forEach(d=>counts[d.status]++);
+  document.getElementById('displayCheck').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+      <div style="text-align:center;background:#d4f5e2;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:800;color:#1a7a3e">${counts.present}</div><div style="font-size:11px;color:#1a7a3e">有陳列</div></div>
+      <div style="text-align:center;background:#fce8e6;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:800;color:#c5221f">${counts.missing}</div><div style="font-size:11px;color:#c5221f">未陳列</div></div>
+      <div style="text-align:center;background:#fffbe6;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:800;color:#8a6100">${counts.poor}</div><div style="font-size:11px;color:#8a6100">位置不佳</div></div>
+    </div>
+    <div style="font-size:13px;color:#555;line-height:1.8">
+      <strong>陳列分數：${Math.round(counts.present/DISPLAY_ITEMS.length*100)}%</strong><br>
+      ${counts.missing>0?`⚠️ ${counts.missing} 件暢銷品未在花車上`:'✅ 所有品項皆有陳列'}<br>
+      ${counts.poor>0?`📌 ${counts.poor} 件位置需調整`:''}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+//  TAB 5 — 更新資料（表單）
+// ═══════════════════════════════════════════
+const CAT_OPTIONS = ['充電器','充電線','行動電源','觸控筆','Lightning線','保護殼','無線充電','iPad配件','其他'];
+
+function renderEditForm() {
+  // 期間
+  document.getElementById('periodStart').value = PERIOD.start;
+  document.getElementById('periodEnd').value   = PERIOD.end;
+
+  // 已儲存照片預覽
+  const photoSrc = pendingPhotoB64 || PHOTO_B64;
+  if (photoSrc) {
+    document.getElementById('photoPreviewImg').src = photoSrc;
+    document.getElementById('photoPreview').style.display = 'block';
+    document.getElementById('photoDrop').style.display = 'none';
+    document.getElementById('photoPreviewLabel').textContent = pendingPhotoB64 ? '新照片（未儲存）' : '已儲存照片';
+  }
+
+  // 銷售資料編輯表格
+  document.getElementById('editTableBody').innerHTML = SALES_DATA.map((d,i) => `
+    <tr id="erow-${i}">
+      <td style="text-align:center;color:var(--sub);font-weight:700">${d.rank}</td>
+      <td><input class="edit-input" value="${d.item_no}" data-i="${i}" data-f="item_no" onchange="updateEditRow(this)"></td>
+      <td><input class="edit-input wide" value="${d.name}" data-i="${i}" data-f="name" onchange="updateEditRow(this)" style="width:100%;min-width:180px"></td>
+      <td>
+        <select class="form-select" data-i="${i}" data-f="catLabel" onchange="updateEditRow(this)" style="font-size:12px;padding:5px 8px">
+          ${CAT_OPTIONS.map(c=>`<option ${d.catLabel===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </td>
+      <td><input class="edit-input" value="${d.cat}" data-i="${i}" data-f="cat" onchange="updateEditRow(this)" style="width:90px"></td>
+      <td><input class="edit-input num" type="number" value="${d.qty}" data-i="${i}" data-f="qty" onchange="updateEditRow(this)"></td>
+      <td><input class="edit-input num" type="number" value="${d.amt}" data-i="${i}" data-f="amt" onchange="updateEditRow(this)" style="width:90px"></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteSalesRow(${i})" title="刪除">✕</button></td>
+    </tr>`).join('');
+
+  // 陳列狀態
+  document.getElementById('displayEditBody').innerHTML = DISPLAY_ITEMS.map((d,i) => `
+    <tr>
+      <td style="text-align:center;color:var(--sub);font-weight:700">${d.rank}</td>
+      <td><input class="edit-input" value="${d.name}" data-i="${i}" data-f="name" onchange="updateDisplayRow(this)" style="width:100%;min-width:160px"></td>
+      <td>
+        <div class="status-toggle">
+          <button class="stbtn present ${d.status==='present'?'active':''}" onclick="setStatus(${i},'present',this)">✅ 有陳列</button>
+          <button class="stbtn missing ${d.status==='missing'?'active':''}" onclick="setStatus(${i},'missing',this)">❌ 未陳列</button>
+          <button class="stbtn poor ${d.status==='poor'?'active':''}" onclick="setStatus(${i},'poor',this)">⚠️ 不佳</button>
+        </div>
+      </td>
+      <td><input class="edit-input" value="${d.note}" data-i="${i}" data-f="note" onchange="updateDisplayRow(this)" style="width:100%;min-width:160px"></td>
+    </tr>`).join('');
+
+  // 上次儲存時間
+  document.getElementById('lastSavedLabel').textContent = LAST_SAVED ? `上次儲存：${LAST_SAVED}` : '尚未儲存';
+}
+
+function updateEditRow(el) {
+  const i = +el.dataset.i, f = el.dataset.f;
+  SALES_DATA[i][f] = (f==='qty'||f==='amt') ? +el.value : el.value;
+  if (f==='rank') SALES_DATA[i].rank = +el.value;
+}
+function updateDisplayRow(el) {
+  DISPLAY_ITEMS[+el.dataset.i][el.dataset.f] = el.value;
+}
+function setStatus(i, status, el) {
+  DISPLAY_ITEMS[i].status = status;
+  el.closest('.status-toggle').querySelectorAll('.stbtn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+function deleteSalesRow(i) {
+  if (!confirm(`確定刪除「${SALES_DATA[i].name}」？`)) return;
+  SALES_DATA.splice(i,1);
+  SALES_DATA.forEach((d,idx)=>d.rank=idx+1);
+  renderEditForm();
+}
+function addSalesRow() {
+  SALES_DATA.push({ rank:SALES_DATA.length+1, item_no:'', cat:'03100000', name:'新品名', qty:0, amt:0, catLabel:'充電器' });
+  DISPLAY_ITEMS.push({ rank:SALES_DATA.length, name:'新品項', status:'missing', note:'' });
+  renderEditForm();
+  setTimeout(()=>{ document.querySelector('#editTableBody tr:last-child input')?.focus(); },100);
+}
+
+// ═══════════════════════════════════════════
+//  Excel 拖放匯入
+// ═══════════════════════════════════════════
+let xlsHeaders = [], xlsRawData = [], xlsColMap = {};
+
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step' + i);
+    if (!el) continue;
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+}
+
+function handleExcelDrop(event) {
+  event.preventDefault();
+  document.getElementById('excelDrop').classList.remove('dragover');
+  const file = event.dataTransfer.files[0];
+  if (file) parseExcelFile(file);
+}
+
+function handleExcelFile(event) {
+  const file = event.target.files[0];
+  if (file) parseExcelFile(file);
+}
+
+function parseExcelFile(file) {
+  document.getElementById('xlsLoadMsg').style.display = 'block';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // 找第一個非空列作為標題列
+      let hdrIdx = 0;
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        if (rows[i].some(c => c !== '')) { hdrIdx = i; break; }
+      }
+      xlsHeaders = rows[hdrIdx].map(h => String(h).trim());
+      xlsRawData = rows.slice(hdrIdx + 1).filter(r => r.some(c => c !== ''));
+
+      document.getElementById('xlsLoadMsg').style.display = 'none';
+      document.getElementById('xlsFileName').textContent = file.name;
+      document.getElementById('xlsSheetInfo').textContent =
+        `工作表：${wb.SheetNames[0]}｜${xlsRawData.length} 筆資料`;
+      document.getElementById('catFilter').value = '';
+
+      renderColMapping(xlsHeaders);
+      document.getElementById('xlsDropZone').style.display = 'none';
+      document.getElementById('xlsMapZone').style.display = 'block';
+      setStep(2);
+    } catch(err) {
+      document.getElementById('xlsLoadMsg').style.display = 'none';
+      alert('❌ 解析失敗：' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function autoDetect(headers, keywords) {
+  const lh = headers.map(h => h.toLowerCase());
+  for (const kw of keywords) {
+    const idx = lh.findIndex(h => h.includes(kw));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function renderColMapping(headers) {
+  const fields = [
+    { key:'item_no',  label:'貨號',     required:true,  kws:['貨號','料號','品號','item','sku'] },
+    { key:'name',     label:'品名',     required:true,  kws:['品名','名稱','商品名','name','描述'] },
+    { key:'cat',      label:'類別代碼', required:false, kws:['類別','class','cat','code','分類'] },
+    { key:'qty',      label:'銷售數量', required:true,  kws:['數量','qty','銷售量','件數','quantity'] },
+    { key:'amt',      label:'銷售金額', required:false, kws:['金額','amt','amount','銷售額','總額','小計'] },
+    { key:'catLabel', label:'類別名稱', required:false, kws:['類別名','品類','類名'] },
+  ];
+  xlsColMap = {};
+  const opts = ['（略過）', ...headers.map((h, i) => h || `欄${i + 1}`)];
+  document.getElementById('colMapGrid').innerHTML = fields.map(f => {
+    const auto = autoDetect(headers, f.kws);
+    xlsColMap[f.key] = auto;
+    return `<div class="col-map-item">
+      <label>${f.label}${f.required ? ' <span class="col-required">*</span>' : ''}</label>
+      <select class="form-select" style="width:100%;font-size:12px" data-field="${f.key}"
+        onchange="xlsColMap[this.dataset.field]=+this.value-1">
+        ${opts.map((o, i) => `<option value="${i}"${i === auto + 1 ? ' selected' : ''}>${o}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('');
+}
+
+function previewImport() {
+  const catPrefix  = document.getElementById('catFilter').value.trim();
+  const exclProt   = document.getElementById('excludeProtector').checked;
+  const EXCL_KW    = ['保護貼','保貼','玻璃貼','贈品'];
+  const EXCL_CATS  = ['03100501','03100502'];
+
+  if (xlsColMap.item_no < 0 || xlsColMap.name < 0 || xlsColMap.qty < 0) {
+    alert('⚠️ 請確認「貨號」、「品名」、「銷售數量」欄位已對應');
+    return;
+  }
+
+  const aggMap = {}; let skipped = 0;
+  xlsRawData.forEach(row => {
+    const item_no    = String(row[xlsColMap.item_no] ?? '').trim();
+    const name       = String(row[xlsColMap.name]    ?? '').trim();
+    const cat        = xlsColMap.cat      >= 0 ? String(row[xlsColMap.cat]      ?? '').trim() : '';
+    const qty        = parseFloat(String(row[xlsColMap.qty] ?? '').replace(/,/g,'')) || 0;
+    const amt        = xlsColMap.amt      >= 0 ? (parseFloat(String(row[xlsColMap.amt] ?? '').replace(/[,$]/g,'')) || 0) : 0;
+    const catLabelRaw= xlsColMap.catLabel >= 0 ? String(row[xlsColMap.catLabel] ?? '').trim() : '';
+
+    if (!name || qty <= 0)                                           { skipped++; return; }
+    // 類別範圍篩選：留空 = 預設 03100000~03100599，有填前綴則用前綴比對
+    if (cat) {
+      if (catPrefix) {
+        if (!cat.startsWith(catPrefix))                              { skipped++; return; }
+      } else {
+        const n = parseInt(cat);
+        if (isNaN(n) || n < 3100000 || n > 3100599)                 { skipped++; return; }
+      }
+    }
+    if (exclProt  && EXCL_CATS.includes(cat))                       { skipped++; return; }
+    if (exclProt  && EXCL_KW.some(kw => name.includes(kw)))        { skipped++; return; }
+
+    const key = item_no || name;
+    if (!aggMap[key]) aggMap[key] = { item_no, name, cat, qty:0, amt:0, catLabel:catLabelRaw };
+    aggMap[key].qty += qty;
+    aggMap[key].amt += amt;
+  });
+
+  let results = Object.values(aggMap).sort((a,b) => b.qty - a.qty).slice(0, 15);
+  results.forEach((d, i) => { d.rank = i + 1; if (!d.catLabel) d.catLabel = guessCatLabel(d.cat); });
+  window._importPreview = results;
+
+  document.getElementById('previewHead').innerHTML =
+    '<th>排名</th><th>貨號</th><th>品名</th><th>類別代碼</th><th>數量</th><th>金額</th>';
+  document.getElementById('previewBody').innerHTML = results.map(d => `
+    <tr class="preview-ok">
+      <td>${d.rank}</td>
+      <td style="font-family:monospace">${d.item_no}</td>
+      <td>${d.name}</td>
+      <td style="font-family:monospace">${d.cat}</td>
+      <td style="font-weight:700">${d.qty}</td>
+      <td style="color:var(--green)">$${d.amt.toLocaleString()}</td>
+    </tr>`).join('');
+  document.getElementById('previewSummary').textContent =
+    `共 ${results.length} 筆列入排行，略過 ${skipped} 筆不符條件`;
+
+  document.getElementById('xlsMapZone').style.display = 'none';
+  document.getElementById('xlsPreviewZone').style.display = 'block';
+  setStep(3);
+}
+
+function guessCatLabel(cat) {
+  if (!cat) return '其他';
+  const m = {
+    '03100005':'充電器','03100006':'充電線','03100004':'行動電源',
+    '03100007':'觸控筆','03100010':'Lightning線','03100104':'保護殼',
+    '03100003':'保護殼','03100002':'無線充電'
+  };
+  return m[cat] || (cat.startsWith('031001') ? '保護殼' : cat.startsWith('03100') ? '充電器' : '其他');
+}
+
+function confirmImport() {
+  const data = window._importPreview;
+  if (!data || !data.length) return;
+
+  const oldMap = {};
+  DISPLAY_ITEMS.forEach(d => { oldMap[d.name] = d; });
+  SALES_DATA    = data;
+  DISPLAY_ITEMS = data.map((d, i) => {
+    const old = oldMap[d.name];
+    return { rank:i+1, name:d.name, status: old ? old.status : 'missing', note: old ? old.note : '' };
+  });
+
+  document.getElementById('xlsPreviewZone').style.display = 'none';
+  setStep(4);
+
+  // 成功訊息
+  const old4 = document.getElementById('step4Msg');
+  if (old4) old4.remove();
+  const msg = document.createElement('div');
+  msg.id = 'step4Msg';
+  msg.style.cssText = 'text-align:center;padding:30px 20px';
+  msg.innerHTML = `
+    <div style="font-size:48px;margin-bottom:12px">✅</div>
+    <div style="font-size:18px;font-weight:700;color:var(--green);margin-bottom:6px">匯入成功！</div>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:20px">已匯入 ${data.length} 筆，陳列狀態已同步。記得點「儲存並套用」</div>
+    <button class="btn btn-gray" onclick="resetImport()">匯入另一份</button>
+  `;
+  document.getElementById('importCard').appendChild(msg);
+
+  chartsInited = false;
+  renderStats(); renderTable(); renderDisplayAnalysis(); renderEditForm();
+  showToast('✅ Excel 匯入完成！請點「儲存並套用」');
+}
+
+function resetImport() {
+  xlsHeaders = []; xlsRawData = []; xlsColMap = {};
+  window._importPreview = null;
+  const old4 = document.getElementById('step4Msg');
+  if (old4) old4.remove();
+  document.getElementById('xlsDropZone').style.display = 'block';
+  document.getElementById('xlsMapZone').style.display = 'none';
+  document.getElementById('xlsPreviewZone').style.display = 'none';
+  document.getElementById('excelFileInput').value = '';
+  setStep(1);
+}
+
+function backToMap() {
+  document.getElementById('xlsPreviewZone').style.display = 'none';
+  document.getElementById('xlsMapZone').style.display = 'block';
+  setStep(2);
+}
+
+// ── 照片處理 ──
+function handlePhotoSelect(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  loadPhotoFile(file);
+}
+function handlePhotoDrop(evt) {
+  evt.preventDefault();
+  document.getElementById('photoDrop').classList.remove('dragover');
+  const file = evt.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadPhotoFile(file);
+}
+function loadPhotoFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      // 壓縮至最大 1200px，JPEG 品質 0.72
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else       { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      pendingPhotoB64 = canvas.toDataURL('image/jpeg', 0.72);
+      document.getElementById('photoPreviewImg').src = pendingPhotoB64;
+      document.getElementById('photoPreview').style.display = 'block';
+      document.getElementById('photoDrop').style.display = 'none';
+      document.getElementById('photoPreviewLabel').textContent = `新照片（${file.name}）— 未儲存`;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removePhoto() {
+  pendingPhotoB64 = null;
+  document.getElementById('photoPreviewImg').src = '';
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('photoDrop').style.display = 'block';
+  document.getElementById('photoInput').value = '';
+}
+
+// ── 儲存 ──
+function saveAll() {
+  // 期間
+  PERIOD = { start: document.getElementById('periodStart').value, end: document.getElementById('periodEnd').value };
+
+  // 照片
+  if (pendingPhotoB64) { PHOTO_B64 = pendingPhotoB64; pendingPhotoB64 = null; }
+
+  // 重新排序 rank
+  SALES_DATA.forEach((d,i)=>d.rank=i+1);
+  // 同步 display items 長度
+  while (DISPLAY_ITEMS.length < SALES_DATA.length) {
+    const r = DISPLAY_ITEMS.length+1;
+    DISPLAY_ITEMS.push({ rank:r, name:SALES_DATA[r-1]?.name||'', status:'missing', note:'' });
+  }
+  DISPLAY_ITEMS.length = SALES_DATA.length;
+
+  // 寫入 localStorage
+  try {
+    localStorage.setItem('acc_sales',   JSON.stringify(SALES_DATA));
+    localStorage.setItem('acc_display', JSON.stringify(DISPLAY_ITEMS));
+    localStorage.setItem('acc_period',  JSON.stringify(PERIOD));
+    if (PHOTO_B64) localStorage.setItem('acc_photo', PHOTO_B64);
+    LAST_SAVED = new Date().toLocaleString('zh-TW');
+    localStorage.setItem('acc_saved', LAST_SAVED);
+  } catch(e) {
+    showToast('❌ 儲存失敗：localStorage 空間不足，請清除部分資料');
+    return;
+  }
+
+  // 重新渲染全頁
+  chartsInited = false;
+  renderStats(); renderTable(); renderDisplayAnalysis(); renderEditForm();
+  showToast('✅ 已儲存！數據已套用至所有頁面');
+}
+
+function resetToDefault() {
+  if (!confirm('確定還原為初始預設數據？此操作無法復原。')) return;
+  localStorage.clear();
+  SALES_DATA = JSON.parse(JSON.stringify(DEFAULT_SALES));
+  DISPLAY_ITEMS = JSON.parse(JSON.stringify(DEFAULT_DISPLAY));
+  PERIOD = { ...DEFAULT_PERIOD }; PHOTO_B64 = null; pendingPhotoB64 = null; LAST_SAVED = null;
+  chartsInited = false;
+  renderStats(); renderTable(); renderDisplayAnalysis(); renderEditForm();
+  showToast('↩ 已還原為預設數據');
+}
+
+// ── Toast 提示 ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ═══════════════════════════════════════════
+//  Tab 切換
+// ═══════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id==='chart')  { if(!chartsInited){ chartsInited=true; renderCharts(); } else { chartInstances.length&&renderCharts(); } }
+  if (id==='display') renderDisplayAnalysis();
+  if (id==='update')  renderEditForm();
+}
+
+// ═══════════════════════════════════════════
+//  初始化
+// ═══════════════════════════════════════════
+renderStats();
+renderTable();
+renderDisplayAnalysis();
+</script>
+</body>
+</html>
