@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
 <title>配件專區陳列建議</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -160,7 +161,14 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
 .toast.show { opacity:1; transform:translateY(0); }
 
 /* Save bar */
-.save-bar { position:sticky; bottom:0; background:rgba(255,255,255,.95); backdrop-filter:blur(8px); border-top:1px solid #e5e5ea; padding:12px 20px; display:flex; gap:10px; align-items:center; z-index:100; }
+.save-bar { position:sticky; bottom:0; background:rgba(255,255,255,.95); backdrop-filter:blur(8px); border-top:1px solid #e5e5ea; padding:12px 20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; z-index:100; }
+.btn-warn { background:#fff4e5; color:#8a6100; border:1.5px solid #ffd59a; }
+.btn-warn:hover { background:#ffedcc; }
+.empty-state { background:#fff; border:2px dashed #b0c8e8; border-radius:16px; padding:32px 20px; text-align:center; margin-bottom:16px; }
+.empty-state .empty-icon { font-size:42px; margin-bottom:8px; }
+.empty-state h3 { font-size:18px; font-weight:700; margin-bottom:8px; }
+.empty-state p { font-size:13px; color:var(--sub); line-height:1.7; }
+.empty-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
 
 /* ── Excel 拖放 ── */
 .excel-drop {
@@ -214,7 +222,7 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
 <header>
   <h1>🍎 配件專區陳列建議</h1>
   <p><span id="storeLabel">右昌 Apple Shop</span> ｜ 副廠配件銷售分析 × 陳列建議</p>
-  <div class="period-badge">銷售期間：2026/01/24 – 2026/04/24（3個月）</div>
+  <div class="period-badge">尚未匯入銷售期間</div>
 </header>
 
 <nav class="tab-nav">
@@ -228,6 +236,8 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
 <!-- ============ TAB 1: 銷售排行 ============ -->
 <div id="tab-rank" class="tab-content active">
 <div class="container">
+
+  <div id="rankEmpty"></div>
 
   <div class="section-title">整體銷售概況</div>
   <div class="stats-row" id="statsRow"></div>
@@ -269,6 +279,8 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
 <!-- ============ TAB 2: 圖表 ============ -->
 <div id="tab-chart" class="tab-content">
 <div class="container">
+  <div id="chartEmpty"></div>
+  <div id="chartBlocks">
   <div class="section-title">銷售數量排行圖</div>
   <div class="card"><div style="height:360px"><canvas id="chartQty"></canvas></div></div>
 
@@ -279,6 +291,7 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
     <div class="card"><div style="height:260px"><canvas id="chartCatQty"></canvas></div></div>
     <div class="card"><div style="height:260px"><canvas id="chartCatAmt"></canvas></div></div>
+  </div>
   </div>
 </div>
 </div>
@@ -296,11 +309,11 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
   <div class="display-grid">
     <div>
       <div class="card display-photo">
-        <img src="display_current.jpg" alt="花車陳列照片" onerror="this.style.display='none';document.getElementById('noPhoto').style.display='block'">
-        <div id="noPhoto" style="display:none;padding:40px;text-align:center;color:var(--sub)">📷 照片未找到<br><small>請將最新照片命名為 display_current.jpg 放入同資料夾</small></div>
+        <img id="displayPhoto" alt="花車陳列照片" style="display:none">
+        <div id="noPhoto" style="padding:40px;text-align:center;color:var(--sub)">📷 尚未上傳照片<br><small>請到「更新資料」上傳，照片只存在這台電腦</small></div>
       </div>
-      <div class="card" style="margin-top:12px; font-size:12px; color:var(--sub)">
-        📅 拍攝日期：2026/04/11 ｜ 花車陳列全景
+      <div class="card" id="photoCaption" style="margin-top:12px; font-size:12px; color:var(--sub)">
+        📷 尚未上傳花車照片
       </div>
     </div>
     <div>
@@ -328,86 +341,8 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
 <div id="tab-recommend" class="tab-content">
 <div class="container">
 
-  <div class="section-title">陳列改善建議 <span class="badge badge-alert">依銷售數據</span></div>
-
-  <div class="rec critical">
-    <div class="rec-tag" style="color:var(--red)">🚨 立即調整</div>
-    <div class="rec-title">充電器（6款入榜）是最大銷售力，必須佔花車最顯眼位置</div>
-    <div class="rec-body">
-      排名 4、5、8、9、12、13 全是充電器，合計 87 件 / 47,019 元，佔前15名總量 38%。
-      <ul>
-        <li>將充電器移至花車<strong>正面中央第一排</strong>，視線高度展示</li>
-        <li>大通 70W（黑/白）、35W 應並排陳列，標示「快充 GaN 氮化鎵」標牌</li>
-        <li>ADAM 35W 放在旁邊對比，突出「多品牌可選」</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="rec critical">
-    <div class="rec-tag" style="color:var(--red)">🚨 立即調整</div>
-    <div class="rec-title">STM iPad 觸控筆（排名第1）單價最高×銷售最多，需給最佳位置</div>
-    <div class="rec-body">
-      單件 951 元，銷售 20 件 = 19,020 元。目前在類別 03100007 唯一入榜品項，競品少，轉換率高。
-      <ul>
-        <li>放置花車<strong>最高點或正前方架上</strong>，避免埋在堆疊中</li>
-        <li>旁邊加小卡片說明「支援 Apple Pencil 功能、磁吸充電」</li>
-        <li>搭配 iPad 保護殼展示，創造連帶購買</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="rec warning">
-    <div class="rec-tag" style="color:#8a6100">⚡ 優先處理</div>
-    <div class="rec-title">充電線（排名 2、3）與 Lightning 線（排名 7、11）需分區清楚標示</div>
-    <div class="rec-body">
-      充電線 4 款合計 64 件，但 Type-C 線與 Lightning 線容易被消費者搞混。
-      <ul>
-        <li>用不同色標籤區分：<strong>Type-C（綠色）/ Lightning（粉色）</strong></li>
-        <li>LoopLoop 磁吸式充電傳輸線 3入組是入榜最高性價比品，應標示「3合1超值組」</li>
-        <li>Lightning 線建議放在 iPhone 配件區，強調相容 iPhone</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="rec warning">
-    <div class="rec-tag" style="color:#8a6100">⚡ 優先處理</div>
-    <div class="rec-title">ADAM 行動電源（排名 6、10）金額前三高，需強調「薄型磁吸」特點</div>
-    <div class="rec-body">
-      兩款合計 29 件，金額高達 42,910 元，是金額貢獻前三名。
-      <ul>
-        <li>行動電源放在花車第二層（次顯眼），附「磁吸 MagSafe 相容」說明</li>
-        <li>銀色與黑色並排，強調「兩色可選」</li>
-        <li>可搭配標價牌，標示「最薄行動電源」USP</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="rec action">
-    <div class="rec-tag" style="color:#1557b0">📐 陳列原則</div>
-    <div class="rec-title">花車陳列應遵循「銷售排行由前到後、由上到下」原則</div>
-    <div class="rec-body">
-      <ul>
-        <li><strong>第一排正面：</strong>充電器（最多人買）+ STM 觸控筆（最高單價）</li>
-        <li><strong>第二排中間：</strong>行動電源（高金額）+ 充電線（高量）</li>
-        <li><strong>第三排後方：</strong>Lightning 線 + 保護殼（UAG / PG）</li>
-        <li>每款商品確保<strong>至少 2 個面朝外</strong>可見</li>
-        <li>每月更新完銷售數據後，重新評估排列順序</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="rec positive">
-    <div class="rec-tag" style="color:#1a7a3e">✅ 優勢維持</div>
-    <div class="rec-title">大通品牌多品入榜（5款）— 建議設立品牌專區</div>
-    <div class="rec-body">
-      大通有充電器（70W黑/白、35W黑、20W白、48W白）共 5 款入榜，合計 71 件 / 39,177 元。
-      <ul>
-        <li>可設立「大通快充專區」集中展示，提升品牌辨識</li>
-        <li>旁邊放 ADAM 品牌，形成「兩大品牌直接比較」的選購場景</li>
-        <li>這種集中展示可縮短選購時間，提升成交率</li>
-      </ul>
-    </div>
-  </div>
+  <div class="section-title">陳列改善建議 <span class="badge badge-info">依目前資料產生</span></div>
+  <div id="recommendList"></div>
 
 </div>
 </div>
@@ -415,6 +350,10 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
 <!-- ============ TAB 5: 更新資料 ============ -->
 <div id="tab-update" class="tab-content">
 <div class="container">
+
+  <div class="card" style="margin-bottom:4px;font-size:13px;line-height:1.7;color:#3a3a3c">
+    銷售、陳列與照片只存在這台瀏覽器。公開網頁不附門市資料。請勿把「含資料備份」上傳到 GitHub Pages。
+  </div>
 
   <!-- 報告期間 -->
   <div class="section-title">🗓 報告期間</div>
@@ -600,8 +539,10 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
 <div class="save-bar">
   <span style="font-size:13px;color:var(--sub)" id="lastSavedLabel">尚未儲存</span>
   <div style="flex:1"></div>
-  <button class="btn btn-gray" onclick="resetToDefault()">↩ 還原預設</button>
-  <button class="btn" onclick="exportHTML()" style="background:#5ac8fa;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📥 匯出更新 HTML</button>
+  <button class="btn btn-gray" onclick="resetToDefault()">↩ 清除本機資料</button>
+  <button class="btn btn-gray" onclick="loadDemoData()">載入示範假資料</button>
+  <button class="btn" onclick="exportHTML()" style="background:#5ac8fa;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">📥 匯出空白 HTML</button>
+  <button class="btn btn-warn" onclick="exportHTMLWithData()">⚠️ 匯出含資料備份</button>
   <button class="btn btn-primary" onclick="saveAll()">💾 儲存並套用</button>
 </div>
 </div>
@@ -612,238 +553,36 @@ footer { text-align:center; padding:20px; font-size:11px; color:var(--sub); }
 
 <script>
 // ═══════════════════════════════════════════
-//  預設資料（首次載入使用）
+//  預設資料（公開頁必須保持空白，不可寫入門市銷售）
 // ═══════════════════════════════════════════
-const DEFAULT_PERIOD   = { start:"2026-01-24", end:"2026-04-24" };
-const DEFAULT_SALES = [
-  {
-    "item_no": "264165",
-    "name": "STM iPad 磁吸智能觸控筆-白",
-    "cat": "03100007",
-    "qty": 20,
-    "amt": 19120,
-    "catLabel": "觸控筆",
-    "rank": 1
-  },
-  {
-    "item_no": "250826",
-    "name": "綠聯 USB-C快充線 Aluminum  BRAID版-1M",
-    "cat": "03100006",
-    "qty": 12,
-    "amt": 2578,
-    "catLabel": "充電線",
-    "rank": 2
-  },
-  {
-    "item_no": "267705",
-    "name": "UAG i17 Pro 磁吸輕量保護殼貼配件組",
-    "cat": "03100104",
-    "qty": 12,
-    "amt": 10600,
-    "catLabel": "保護殼",
-    "rank": 3
-  },
-  {
-    "item_no": "174356",
-    "name": "ADAM TYPE-C公對USB母轉接器-灰",
-    "cat": "03100005",
-    "qty": 11,
-    "amt": 4290,
-    "catLabel": "充電器",
-    "rank": 4
-  },
-  {
-    "item_no": "243814",
-    "name": "大通 快充1C1A 20W電源供應器-白",
-    "cat": "03100005",
-    "qty": 9,
-    "amt": 3311,
-    "catLabel": "充電器",
-    "rank": 5
-  },
-  {
-    "item_no": "204191",
-    "name": "大通 USB-A to Lightning充電線 1M-灰",
-    "cat": "03100010",
-    "qty": 8,
-    "amt": 3752,
-    "catLabel": "Lightning線",
-    "rank": 6
-  },
-  {
-    "item_no": "240930",
-    "name": "大通 快充1C1A 氮化鎵35W 充電器-白",
-    "cat": "03100005",
-    "qty": 8,
-    "amt": 3887,
-    "catLabel": "充電器",
-    "rank": 7
-  },
-  {
-    "item_no": "253105",
-    "name": "大通 快充3C1A 氮化鎵100W 充電組",
-    "cat": "03100005",
-    "qty": 8,
-    "amt": 10660,
-    "catLabel": "充電器",
-    "rank": 8
-  },
-  {
-    "item_no": "261979",
-    "name": "UAG i17 磁吸全透保護殼-極透明",
-    "cat": "03100104",
-    "qty": 8,
-    "amt": 8195,
-    "catLabel": "保護殼",
-    "rank": 9
-  },
-  {
-    "item_no": "267697",
-    "name": "Riivan 45W GaN氮化鎵電源供應器2C-白色",
-    "cat": "03100005",
-    "qty": 8,
-    "amt": 4400,
-    "catLabel": "充電器",
-    "rank": 10
-  },
-  {
-    "item_no": "204187",
-    "name": "大通 USB-C to Lightning充電線 1M-灰",
-    "cat": "03100010",
-    "qty": 7,
-    "amt": 3583,
-    "catLabel": "Lightning線",
-    "rank": 11
-  },
-  {
-    "item_no": "243668",
-    "name": "Apone Type-C 轉USB3.0 高速轉接頭",
-    "cat": "03100005",
-    "qty": 7,
-    "amt": 833,
-    "catLabel": "充電器",
-    "rank": 12
-  },
-  {
-    "item_no": "261906",
-    "name": "ADAM VIONTA L10 行動電源10000mAh-黑",
-    "cat": "03100004",
-    "qty": 7,
-    "amt": 10430,
-    "catLabel": "行動電源",
-    "rank": 13
-  },
-  {
-    "item_no": "266136",
-    "name": "ADAM VIONTA B10 固態行動電源10000mAh-黑",
-    "cat": "03100004",
-    "qty": 7,
-    "amt": 13930,
-    "catLabel": "行動電源",
-    "rank": 14
-  },
-  {
-    "item_no": "266609",
-    "name": "SEEK PD 35W GaN電源供應器-白色",
-    "cat": "03100005",
-    "qty": 7,
-    "amt": 2793,
-    "catLabel": "充電器",
-    "rank": 15
-  }
+/*DEFAULT_PERIOD_START*/
+const DEFAULT_PERIOD = { start: "", end: "" };
+/*DEFAULT_PERIOD_END*/
+/*DEFAULT_SALES_START*/
+const DEFAULT_SALES = [];
+/*DEFAULT_SALES_END*/
+/*DEFAULT_DISPLAY_START*/
+const DEFAULT_DISPLAY = [];
+/*DEFAULT_DISPLAY_END*/
+
+// 明顯假資料，只在按下「載入示範假資料」後出現，貨號皆為 DEMO-
+const DEMO_PERIOD = { start: "2099-01-01", end: "2099-03-31" };
+const DEMO_SALES = [
+  { item_no: "DEMO-001", name: "【示範·假資料】虛構快充頭 30W", cat: "03100005", qty: 30, amt: 9000, catLabel: "充電器", rank: 1 },
+  { item_no: "DEMO-002", name: "【示範·假資料】虛構充電線 1 公尺", cat: "03100006", qty: 24, amt: 4800, catLabel: "充電線", rank: 2 },
+  { item_no: "DEMO-003", name: "【示範·假資料】虛構磁吸行動電源", cat: "03100004", qty: 18, amt: 12600, catLabel: "行動電源", rank: 3 },
+  { item_no: "DEMO-004", name: "【示範·假資料】虛構觸控筆", cat: "03100007", qty: 15, amt: 15000, catLabel: "觸控筆", rank: 4 },
+  { item_no: "DEMO-005", name: "【示範·假資料】虛構 Lightning 線", cat: "03100010", qty: 12, amt: 3600, catLabel: "Lightning線", rank: 5 },
+  { item_no: "DEMO-006", name: "【示範·假資料】虛構保護殼", cat: "03100104", qty: 10, amt: 8000, catLabel: "保護殼", rank: 6 },
+  { item_no: "DEMO-007", name: "【示範·假資料】虛構無線充電板", cat: "03100002", qty: 8, amt: 6400, catLabel: "無線充電", rank: 7 },
+  { item_no: "DEMO-008", name: "【示範·假資料】虛構氮化鎵充電器", cat: "03100005", qty: 7, amt: 5600, catLabel: "充電器", rank: 8 }
 ];
-const DEFAULT_DISPLAY = [
-  {
-    "rank": 1,
-    "name": "STM iPad 磁吸智能觸控筆-白",
-    "status": "present",
-    "note": "stm goods Stylus USB-C 已陳列（上排右側）"
-  },
-  {
-    "rank": 2,
-    "name": "綠聯 USB-C快充線 Aluminum  BRAID版-1M",
-    "status": "missing",
-    "note": ""
-  },
-  {
-    "rank": 3,
-    "name": "UAG i17 Pro 磁吸輕量保護殼貼配件組",
-    "status": "present",
-    "note": "UAG 殼陳列於花車中段（請現場核對是否為 i17 Pro 磁吸輕量款）"
-  },
-  {
-    "rank": 4,
-    "name": "ADAM TYPE-C公對USB母轉接器-灰",
-    "status": "missing",
-    "note": ""
-  },
-  {
-    "rank": 5,
-    "name": "大通 快充1C1A 20W電源供應器-白",
-    "status": "missing",
-    "note": ""
-  },
-  {
-    "rank": 6,
-    "name": "大通 USB-A to Lightning充電線 1M-灰",
-    "status": "present",
-    "note": "PX Charge & Sync 1M 上排已陳列（×3 包）"
-  },
-  {
-    "rank": 7,
-    "name": "大通 快充1C1A 氮化鎵35W 充電器-白",
-    "status": "missing",
-    "note": ""
-  },
-  {
-    "rank": 8,
-    "name": "大通 快充3C1A 氮化鎵100W 充電組",
-    "status": "present",
-    "note": "PX 100W GaN UCP-100CB 已陳列於充電器區"
-  },
-  {
-    "rank": 9,
-    "name": "UAG i17 磁吸全透保護殼-極透明",
-    "status": "present",
-    "note": "UAG 透明殼陳列於花車中段（請現場核對是否為 i17 全透款）"
-  },
-  {
-    "rank": 10,
-    "name": "Riivan 45W GaN氮化鎵電源供應器2C-白色",
-    "status": "missing",
-    "note": "花車有多包 Riivan STRENGTH+ 但讀不到 45W 標示，請現場確認"
-  },
-  {
-    "rank": 11,
-    "name": "大通 USB-C to Lightning充電線 1M-灰",
-    "status": "missing",
-    "note": "上排有 Acer USB-C to Lightning（別牌），未見 PX 大通版"
-  },
-  {
-    "rank": 12,
-    "name": "Apone Type-C 轉USB3.0 高速轉接頭",
-    "status": "missing",
-    "note": ""
-  },
-  {
-    "rank": 13,
-    "name": "ADAM VIONTA L10 行動電源10000mAh-黑",
-    "status": "missing",
-    "note": ""
-  },
-  {
-    "rank": 14,
-    "name": "ADAM VIONTA B10 固態行動電源10000mAh-黑",
-    "status": "missing",
-    "note": ""
-  },
-  {
-    "rank": 15,
-    "name": "SEEK PD 35W GaN電源供應器-白色",
-    "status": "missing",
-    "note": "花車左下有 SEEK 65W（規格不同），35W 版未見"
-  }
-];
+const DEMO_DISPLAY = DEMO_SALES.map((d, i) => ({
+  rank: d.rank,
+  name: d.name,
+  status: i % 3 === 1 ? "missing" : (i % 3 === 2 ? "poor" : "present"),
+  note: "示範假資料，非門市陳列"
+}));
 
 // ═══════════════════════════════════════════
 //  localStorage 讀取（優先使用已儲存資料）
@@ -852,11 +591,18 @@ function load(key, def) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; }
 }
 function isValidSalesData(d) {
-  if (!Array.isArray(d) || d.length === 0) return false;
+  if (!Array.isArray(d)) return false;
+  if (d.length === 0) return true;
   const maxQty = Math.max(...d.map(x => x.qty || 0));
   // 單品最高銷售量不應超過 2000（3個月門市），超過代表是合計列或整批資料
   if (maxQty > 2000) return false;
   // 必須有 name 欄且不全為亂碼（含合法中文/英文）
+  if (!d[0].name || !/[\u4e00-\u9fff\w]/.test(d[0].name)) return false;
+  return true;
+}
+function isValidDisplayData(d) {
+  if (!Array.isArray(d)) return false;
+  if (d.length === 0) return true;
   if (!d[0].name || !/[\u4e00-\u9fff\w]/.test(d[0].name)) return false;
   return true;
 }
@@ -867,13 +613,14 @@ if (!isValidSalesData(SALES_DATA)) {
   localStorage.removeItem('acc_sales');
 }
 let DISPLAY_ITEMS = load('acc_display', DEFAULT_DISPLAY);
-// 同樣驗證 DISPLAY_ITEMS（名稱亂碼時自動清除）
-if (!Array.isArray(DISPLAY_ITEMS) || DISPLAY_ITEMS.length === 0 ||
-    !DISPLAY_ITEMS[0].name || !/[\u4e00-\u9fff\w]/.test(DISPLAY_ITEMS[0].name)) {
+if (!isValidDisplayData(DISPLAY_ITEMS)) {
   DISPLAY_ITEMS = JSON.parse(JSON.stringify(DEFAULT_DISPLAY));
   localStorage.removeItem('acc_display');
 }
 let PERIOD        = load('acc_period',  DEFAULT_PERIOD);
+if (!PERIOD || typeof PERIOD !== 'object') PERIOD = { start: "", end: "" };
+PERIOD.start = PERIOD.start || "";
+PERIOD.end = PERIOD.end || "";
 const BAKED_PHOTO = null; /* BAKED_PHOTO */
 let PHOTO_B64     = load('acc_photo',   BAKED_PHOTO);   // base64 string or null
 let LAST_SAVED    = localStorage.getItem('acc_saved') || null;
@@ -894,51 +641,113 @@ function catColor(label) {
 
 // ── 報告期間格式 ──
 function fmtPeriod() {
-  return `${PERIOD.start.replace(/-/g,'/')} – ${PERIOD.end.replace(/-/g,'/')}`;
+  if (!PERIOD || !PERIOD.start || !PERIOD.end) return '';
+  return `${String(PERIOD.start).replace(/-/g,'/')} – ${String(PERIOD.end).replace(/-/g,'/')}`;
+}
+function hasSales() {
+  return Array.isArray(SALES_DATA) && SALES_DATA.length > 0;
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function emptyStateHTML(title) {
+  return `
+    <div class="empty-state">
+      <div class="empty-icon">📥</div>
+      <h3>${esc(title || '還沒有銷售資料')}</h3>
+      <p>請到「更新資料」上傳門市匯出的 Excel 或 CSV（.xls、.xlsx、.csv）。<br>資料只存在這台電腦，不會寫進公開網頁。</p>
+      <div class="empty-actions">
+        <button class="btn btn-primary" type="button" onclick="goTab('update')">前往上傳</button>
+        <button class="btn btn-gray" type="button" onclick="loadDemoData()">載入示範假資料（DEMO）</button>
+      </div>
+    </div>`;
+}
+function refreshAfterDataChange() {
+  chartsInited = false;
+  renderStats();
+  renderTable();
+  renderDisplayAnalysis();
+  renderRecommendations();
+  renderEditForm();
+  if (document.getElementById('tab-chart').classList.contains('active')) {
+    chartsInited = true;
+    renderCharts();
+  }
 }
 
 // ═══════════════════════════════════════════
 //  TAB 1 — 銷售排行
 // ═══════════════════════════════════════════
 function renderStats() {
-  const totalQty = SALES_DATA.reduce((a,b)=>a+b.qty,0);
-  const totalAmt = SALES_DATA.reduce((a,b)=>a+b.amt,0);
-  const topItem  = SALES_DATA[0];
-  const cats     = [...new Set(SALES_DATA.map(d=>d.catLabel))];
+  const badgeText = fmtPeriod() ? ('銷售期間：' + fmtPeriod()) : '尚未匯入銷售期間';
+  document.querySelectorAll('.period-badge').forEach(el => el.textContent = badgeText);
+  const rankEmpty = document.getElementById('rankEmpty');
+  if (!hasSales()) {
+    if (rankEmpty) rankEmpty.innerHTML = emptyStateHTML('還沒有銷售資料');
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-card"><div class="stat-label">合計銷售量</div><div class="stat-value" style="color:var(--blue)">—</div><div style="font-size:12px;color:var(--sub);margin-top:4px">上傳後顯示</div></div>
+      <div class="stat-card"><div class="stat-label">合計銷售額</div><div class="stat-value" style="color:var(--green)">—</div><div style="font-size:12px;color:var(--sub);margin-top:4px">上傳後顯示</div></div>
+      <div class="stat-card"><div class="stat-label">銷售冠軍</div><div class="stat-value" style="font-size:16px;margin-top:6px">—</div><div style="font-size:12px;color:var(--sub);margin-top:4px">上傳後顯示</div></div>
+      <div class="stat-card"><div class="stat-label">涉及類別數</div><div class="stat-value" style="color:var(--purple)">—</div><div style="font-size:12px;color:var(--sub);margin-top:4px">上傳後顯示</div></div>
+    `;
+    return;
+  }
+  if (rankEmpty) rankEmpty.innerHTML = '';
+  const totalQty = SALES_DATA.reduce((a,b)=>a+(+b.qty||0),0);
+  const totalAmt = SALES_DATA.reduce((a,b)=>a+(+b.amt||0),0);
+  const topItem  = SALES_DATA.find(d => d.rank === 1) || SALES_DATA[0];
+  const cats     = [...new Set(SALES_DATA.map(d=>d.catLabel).filter(Boolean))];
+  const topName  = String(topItem.name || '—').slice(0,14);
   document.getElementById('statsRow').innerHTML = `
     <div class="stat-card"><div class="stat-label">前${SALES_DATA.length}名合計銷售量</div><div class="stat-value" style="color:var(--blue)">${totalQty}</div><div style="font-size:12px;color:var(--sub);margin-top:4px">件</div></div>
     <div class="stat-card"><div class="stat-label">前${SALES_DATA.length}名合計銷售額</div><div class="stat-value" style="color:var(--green)">${(totalAmt/10000).toFixed(1)}萬</div><div style="font-size:12px;color:var(--sub);margin-top:4px">元</div></div>
-    <div class="stat-card"><div class="stat-label">銷售冠軍</div><div class="stat-value sm" style="font-size:16px;margin-top:6px">${topItem.name.slice(0,14)}</div><div style="font-size:12px;color:var(--sub);margin-top:4px">${topItem.qty}件 / ${topItem.catLabel}</div></div>
-    <div class="stat-card"><div class="stat-label">涉及類別數</div><div class="stat-value" style="color:var(--purple)">${cats.length}</div><div style="font-size:12px;color:var(--sub);margin-top:4px">${cats.slice(0,4).join(' · ')}</div></div>
+    <div class="stat-card"><div class="stat-label">銷售冠軍</div><div class="stat-value sm" style="font-size:16px;margin-top:6px">${esc(topName)}</div><div style="font-size:12px;color:var(--sub);margin-top:4px">${topItem.qty||0}件 / ${esc(topItem.catLabel||'')}</div></div>
+    <div class="stat-card"><div class="stat-label">涉及類別數</div><div class="stat-value" style="color:var(--purple)">${cats.length}</div><div style="font-size:12px;color:var(--sub);margin-top:4px">${esc(cats.slice(0,4).join(' · '))}</div></div>
   `;
-  document.querySelectorAll('.period-badge').forEach(el => el.textContent = '銷售期間：' + fmtPeriod());
 }
 
 function renderTable() {
-  const search = document.getElementById('searchBox').value.toLowerCase();
+  const tbody = document.getElementById('salesTableBody');
+  if (!hasSales()) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--sub)">尚無銷售資料。請上傳 Excel／CSV，或載入示範假資料。</td></tr>`;
+    return;
+  }
+  const search = (document.getElementById('searchBox').value || '').toLowerCase();
   let data = SALES_DATA.filter(d => {
     const matchCat    = currentCat === 'all' || d.catLabel === currentCat;
-    const matchSearch = !search || d.name.toLowerCase().includes(search) || d.item_no.includes(search);
+    const name = String(d.name || '').toLowerCase();
+    const itemNo = String(d.item_no || '').toLowerCase();
+    const matchSearch = !search || name.includes(search) || itemNo.includes(search);
     return matchCat && matchSearch;
   });
-  data.sort((a,b) => (a[sortField]-b[sortField]) * sortDir);
-  const maxQty = Math.max(...SALES_DATA.map(d=>d.qty));
-  const total  = SALES_DATA.reduce((a,b)=>a+b.qty,0);
-  document.getElementById('salesTableBody').innerHTML = data.map(d => `
+  data.sort((a,b) => ((+a[sortField]||0)-(+b[sortField]||0)) * sortDir);
+  const maxQty = Math.max(0, ...SALES_DATA.map(d=>+d.qty||0));
+  const total  = SALES_DATA.reduce((a,b)=>a+(+b.qty||0),0);
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--sub)">沒有符合篩選的品項</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(d => {
+    const qty = +d.qty || 0;
+    const amt = +d.amt || 0;
+    const width = maxQty > 0 ? (qty / maxQty * 100) : 0;
+    const share = total > 0 ? (qty / total * 100).toFixed(1) : '0.0';
+    return `
     <tr>
       <td><span class="rank-badge ${d.rank<=3?'rank-'+d.rank:'rank-other'}">${d.rank}</span></td>
-      <td style="font-family:monospace;font-size:12px">${d.item_no}</td>
-      <td><span class="cat-chip cat-${d.catLabel}">${d.catLabel}</span></td>
-      <td style="font-size:13px;max-width:240px">${d.name}</td>
+      <td style="font-family:monospace;font-size:12px">${esc(d.item_no)}</td>
+      <td><span class="cat-chip cat-${esc(d.catLabel)}">${esc(d.catLabel)}</span></td>
+      <td style="font-size:13px;max-width:240px">${esc(d.name)}</td>
       <td>
         <div class="qty-bar-wrap">
-          <div class="qty-bar-track"><div class="qty-bar-fill" style="width:${d.qty/maxQty*100}%;background:${catColor(d.catLabel)}"></div></div>
-          <span class="qty-num">${d.qty}</span>
+          <div class="qty-bar-track"><div class="qty-bar-fill" style="width:${width}%;background:${catColor(d.catLabel)}"></div></div>
+          <span class="qty-num">${qty}</span>
         </div>
       </td>
-      <td class="amt-val">$${d.amt.toLocaleString()}</td>
-      <td style="font-size:12px;color:var(--sub)">${(d.qty/total*100).toFixed(1)}%</td>
-    </tr>`).join('');
+      <td class="amt-val">$${amt.toLocaleString()}</td>
+      <td style="font-size:12px;color:var(--sub)">${share}%</td>
+    </tr>`;
+  }).join('');
 }
 
 function filterCat(cat, el) {
@@ -959,7 +768,19 @@ let chartsInited = false, chartInstances = [];
 function renderCharts() {
   chartInstances.forEach(c=>c.destroy());
   chartInstances = [];
-  const names  = SALES_DATA.map(d=>d.name.length>12?d.name.slice(0,12)+'…':d.name);
+  const empty = document.getElementById('chartEmpty');
+  const blocks = document.getElementById('chartBlocks');
+  if (!hasSales()) {
+    if (empty) empty.innerHTML = emptyStateHTML('還沒有圖表可以畫');
+    if (blocks) blocks.style.display = 'none';
+    return;
+  }
+  if (empty) empty.innerHTML = '';
+  if (blocks) blocks.style.display = '';
+  const names  = SALES_DATA.map(d=>{
+    const n = String(d.name || '');
+    return n.length>12?n.slice(0,12)+'…':n;
+  });
   const colors = SALES_DATA.map(d=>catColor(d.catLabel));
 
   chartInstances.push(new Chart(document.getElementById('chartQty'),{
@@ -972,7 +793,12 @@ function renderCharts() {
   }));
 
   const catMap = {};
-  SALES_DATA.forEach(d=>{ if(!catMap[d.catLabel]) catMap[d.catLabel]={qty:0,amt:0}; catMap[d.catLabel].qty+=d.qty; catMap[d.catLabel].amt+=d.amt; });
+  SALES_DATA.forEach(d=>{
+    const label = d.catLabel || '其他';
+    if(!catMap[label]) catMap[label]={qty:0,amt:0};
+    catMap[label].qty+=(+d.qty||0);
+    catMap[label].amt+=(+d.amt||0);
+  });
   const cl=Object.keys(catMap), cc=cl.map(catColor);
   chartInstances.push(new Chart(document.getElementById('chartCatQty'),{
     type:'doughnut', data:{labels:cl,datasets:[{data:cl.map(c=>catMap[c].qty),backgroundColor:cc,borderWidth:0}]},
@@ -996,27 +822,45 @@ function renderDisplayAnalysis() {
   const pendingBanner = document.getElementById('importPendingBanner');
   if (pendingBanner) pendingBanner.style.display = window._importPreview ? 'block' : 'none';
 
-  // 顯示照片（優先 localStorage base64，次之 display_current.jpg）
-  const photoEl = document.querySelector('#tab-display .display-photo img');
+  const photoEl = document.getElementById('displayPhoto');
   const noPhotoEl = document.getElementById('noPhoto');
-  if (PHOTO_B64) {
-    photoEl.src = PHOTO_B64; photoEl.style.display='block'; if(noPhotoEl) noPhotoEl.style.display='none';
-  } else {
-    photoEl.src = 'display_current.jpg'; photoEl.style.display='block';
+  const caption = document.getElementById('photoCaption');
+  if (PHOTO_B64 && photoEl) {
+    photoEl.src = PHOTO_B64;
+    photoEl.style.display = 'block';
+    if (noPhotoEl) noPhotoEl.style.display = 'none';
+    if (caption) caption.textContent = '📷 已使用這台電腦儲存的花車照片';
+  } else if (photoEl) {
+    photoEl.removeAttribute('src');
+    photoEl.style.display = 'none';
+    if (noPhotoEl) noPhotoEl.style.display = 'block';
+    if (caption) caption.textContent = '📷 尚未上傳花車照片';
   }
 
-  document.getElementById('displayAnalysisBody').innerHTML = DISPLAY_ITEMS.map(d=>`
+  const analysisBody = document.getElementById('displayAnalysisBody');
+  if (!DISPLAY_ITEMS.length) {
+    analysisBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--sub)">尚無陳列對照。請先上傳銷售資料，或載入示範假資料。</td></tr>`;
+    document.getElementById('displayCheck').innerHTML = `<div style="font-size:13px;color:var(--sub);line-height:1.7">上傳銷售資料後，這裡會對照花車陳列狀態。</div>`;
+    return;
+  }
+
+  analysisBody.innerHTML = DISPLAY_ITEMS.map(d=>{
+    const sale = SALES_DATA[d.rank-1] || {};
+    const catLabel = sale.catLabel || '';
+    return `
     <tr>
       <td><span class="rank-badge ${d.rank<=3?'rank-'+d.rank:'rank-other'}">${d.rank}</span></td>
-      <td style="font-size:13px">${d.name}</td>
-      <td><span class="cat-chip cat-${SALES_DATA[d.rank-1]?.catLabel||''}">${SALES_DATA[d.rank-1]?.catLabel||''}</span></td>
-      <td style="font-weight:700">${SALES_DATA[d.rank-1]?.qty||''}</td>
-      <td style="background:${colorMap[d.status]};color:${textMap[d.status]};font-weight:600;font-size:13px;border-radius:8px;padding:6px 10px;text-align:center">${statusMap[d.status]}</td>
-      <td style="font-size:12px;color:var(--sub)">${d.note}</td>
-    </tr>`).join('');
+      <td style="font-size:13px">${esc(d.name)}</td>
+      <td><span class="cat-chip cat-${esc(catLabel)}">${esc(catLabel)}</span></td>
+      <td style="font-weight:700">${sale.qty ?? ''}</td>
+      <td style="background:${colorMap[d.status]||'#f5f5f7'};color:${textMap[d.status]||'#6e6e73'};font-weight:600;font-size:13px;border-radius:8px;padding:6px 10px;text-align:center">${statusMap[d.status]||esc(d.status)}</td>
+      <td style="font-size:12px;color:var(--sub)">${esc(d.note)}</td>
+    </tr>`;
+  }).join('');
 
   const counts = {present:0,missing:0,poor:0};
-  DISPLAY_ITEMS.forEach(d=>counts[d.status]++);
+  DISPLAY_ITEMS.forEach(d => { if (counts[d.status] !== undefined) counts[d.status]++; });
+  const score = DISPLAY_ITEMS.length ? Math.round(counts.present / DISPLAY_ITEMS.length * 100) : 0;
   document.getElementById('displayCheck').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
       <div style="text-align:center;background:#d4f5e2;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:800;color:#1a7a3e">${counts.present}</div><div style="font-size:11px;color:#1a7a3e">有陳列</div></div>
@@ -1024,10 +868,98 @@ function renderDisplayAnalysis() {
       <div style="text-align:center;background:#fffbe6;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:800;color:#8a6100">${counts.poor}</div><div style="font-size:11px;color:#8a6100">位置不佳</div></div>
     </div>
     <div style="font-size:13px;color:#555;line-height:1.8">
-      <strong>陳列分數：${Math.round(counts.present/DISPLAY_ITEMS.length*100)}%</strong><br>
+      <strong>陳列分數：${score}%</strong><br>
       ${counts.missing>0?`⚠️ ${counts.missing} 件暢銷品未在花車上`:'✅ 所有品項皆有陳列'}<br>
       ${counts.poor>0?`📌 ${counts.poor} 件位置需調整`:''}
     </div>`;
+}
+
+function renderRecommendations() {
+  const box = document.getElementById('recommendList');
+  if (!box) return;
+  if (!hasSales()) {
+    box.innerHTML = emptyStateHTML('還沒有可以分析的銷售資料');
+    return;
+  }
+  const totalQty = SALES_DATA.reduce((a,b)=>a+(+b.qty||0),0);
+  const money = n => '$' + Math.round(+n || 0).toLocaleString();
+  const catMap = {};
+  SALES_DATA.forEach(d => {
+    const k = d.catLabel || '其他';
+    if (!catMap[k]) catMap[k] = { qty:0, amt:0, n:0 };
+    catMap[k].qty += +d.qty || 0;
+    catMap[k].amt += +d.amt || 0;
+    catMap[k].n += 1;
+  });
+  const cats = Object.entries(catMap).sort((a,b)=>b[1].qty-a[1].qty);
+  const topCat = cats[0];
+  const second = cats[1];
+  const topAmt = [...SALES_DATA].sort((a,b)=>(+b.amt||0)-(+a.amt||0))[0];
+  let html = '';
+  if (topCat) {
+    const share = totalQty ? Math.round(topCat[1].qty / totalQty * 100) : 0;
+    html += `
+      <div class="rec critical">
+        <div class="rec-tag" style="color:var(--red)">🚨 立即調整</div>
+        <div class="rec-title">${esc(topCat[0])}是目前數量最高的類別，應放在花車最顯眼處</div>
+        <div class="rec-body">
+          這個類別有 ${topCat[1].n} 款入榜，合計 ${topCat[1].qty} 件／${money(topCat[1].amt)}，約佔目前排行數量 ${share}%。
+          <ul>
+            <li>把此類放到花車正面、視線高度</li>
+            <li>同系列並排，方便客人比較規格</li>
+            <li>標示瓦數、接頭或顏色差異</li>
+          </ul>
+        </div>
+      </div>`;
+  }
+  if (topAmt) {
+    html += `
+      <div class="rec critical">
+        <div class="rec-tag" style="color:var(--red)">🚨 立即調整</div>
+        <div class="rec-title">金額最高：${esc(topAmt.name)}</div>
+        <div class="rec-body">
+          銷售 ${+topAmt.qty||0} 件，金額 ${money(topAmt.amt)}（${esc(topAmt.catLabel||'未分類')}）。金額貢獻高的品項不要埋在堆疊裡。
+          <ul>
+            <li>放在前排或上層，包裝正面朝外</li>
+            <li>旁邊留一句話說明主要賣點</li>
+            <li>可搭配同情境配件，方便加購</li>
+          </ul>
+        </div>
+      </div>`;
+  }
+  if (second) {
+    html += `
+      <div class="rec warning">
+        <div class="rec-tag" style="color:#8a6100">⚡ 優先處理</div>
+        <div class="rec-title">${esc(second[0])}是第二大類，建議跟第一類分區標示</div>
+        <div class="rec-body">
+          合計 ${second[1].qty} 件／${money(second[1].amt)}。接頭或用途不同的商品要分開，避免客人拿錯。
+        </div>
+      </div>`;
+  }
+  html += `
+    <div class="rec action">
+      <div class="rec-tag" style="color:#1557b0">📐 陳列原則</div>
+      <div class="rec-title">由前到後、由上到下，對齊目前銷售排行</div>
+      <div class="rec-body">
+        <ul>
+          <li><strong>前排：</strong>數量或金額最高的品項</li>
+          <li><strong>中段：</strong>第二、第三名類別</li>
+          <li><strong>後段：</strong>其餘入榜品項，每款至少兩個正面朝外</li>
+          <li>每次更新銷售資料後，重新對一次順序</li>
+        </ul>
+      </div>
+    </div>`;
+  if (DISPLAY_ITEMS.length) {
+    const missing = DISPLAY_ITEMS.filter(d => d.status === 'missing').length;
+    html += `
+      <div class="rec ${missing ? 'warning' : 'positive'}">
+        <div class="rec-tag" style="color:${missing ? '#8a6100' : '#1a7a3e'}">${missing ? '⚡ 陳列缺口' : '✅ 陳列齊全'}</div>
+        <div class="rec-title">${missing ? `有 ${missing} 項入榜商品標成未陳列` : '目前入榜品項都有標成已陳列'}</div>
+        <div class="rec-body">請到「花車陳列」對照現場。狀態不對就到「更新資料」修改，再按「儲存並套用」。</div>
+      </div>`;
+  }
+  box.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════
@@ -1047,30 +979,43 @@ function renderEditForm() {
     document.getElementById('photoPreview').style.display = 'block';
     document.getElementById('photoDrop').style.display = 'none';
     document.getElementById('photoPreviewLabel').textContent = pendingPhotoB64 ? '新照片（未儲存）' : '已儲存照片';
+  } else {
+    document.getElementById('photoPreviewImg').removeAttribute('src');
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('photoDrop').style.display = 'block';
   }
 
   // 銷售資料編輯表格
-  document.getElementById('editTableBody').innerHTML = SALES_DATA.map((d,i) => `
+  const editBody = document.getElementById('editTableBody');
+  if (!SALES_DATA.length) {
+    editBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--sub)">尚無品項。請上傳 Excel／CSV，或載入示範假資料。</td></tr>`;
+  } else {
+    editBody.innerHTML = SALES_DATA.map((d,i) => `
     <tr id="erow-${i}">
       <td style="text-align:center;color:var(--sub);font-weight:700">${d.rank}</td>
-      <td><input class="edit-input" value="${d.item_no}" data-i="${i}" data-f="item_no" onchange="updateEditRow(this)"></td>
-      <td><input class="edit-input wide" value="${d.name}" data-i="${i}" data-f="name" onchange="updateEditRow(this)" style="width:100%;min-width:180px"></td>
+      <td><input class="edit-input" value="${esc(d.item_no)}" data-i="${i}" data-f="item_no" onchange="updateEditRow(this)"></td>
+      <td><input class="edit-input wide" value="${esc(d.name)}" data-i="${i}" data-f="name" onchange="updateEditRow(this)" style="width:100%;min-width:180px"></td>
       <td>
         <select class="form-select" data-i="${i}" data-f="catLabel" onchange="updateEditRow(this)" style="font-size:12px;padding:5px 8px">
-          ${CAT_OPTIONS.map(c=>`<option ${d.catLabel===c?'selected':''}>${c}</option>`).join('')}
+          ${CAT_OPTIONS.map(c=>`<option ${d.catLabel===c?'selected':''}>${esc(c)}</option>`).join('')}
         </select>
       </td>
-      <td><input class="edit-input" value="${d.cat}" data-i="${i}" data-f="cat" onchange="updateEditRow(this)" style="width:90px"></td>
-      <td><input class="edit-input num" type="number" value="${d.qty}" data-i="${i}" data-f="qty" onchange="updateEditRow(this)"></td>
-      <td><input class="edit-input num" type="number" value="${d.amt}" data-i="${i}" data-f="amt" onchange="updateEditRow(this)" style="width:90px"></td>
+      <td><input class="edit-input" value="${esc(d.cat)}" data-i="${i}" data-f="cat" onchange="updateEditRow(this)" style="width:90px"></td>
+      <td><input class="edit-input num" type="number" value="${d.qty ?? 0}" data-i="${i}" data-f="qty" onchange="updateEditRow(this)"></td>
+      <td><input class="edit-input num" type="number" value="${d.amt ?? 0}" data-i="${i}" data-f="amt" onchange="updateEditRow(this)" style="width:90px"></td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteSalesRow(${i})" title="刪除">✕</button></td>
     </tr>`).join('');
+  }
 
   // 陳列狀態
-  document.getElementById('displayEditBody').innerHTML = DISPLAY_ITEMS.map((d,i) => `
+  const displayBody = document.getElementById('displayEditBody');
+  if (!DISPLAY_ITEMS.length) {
+    displayBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:18px;color:var(--sub)">尚無陳列項目。匯入銷售資料後會出現在這裡。</td></tr>`;
+  } else {
+    displayBody.innerHTML = DISPLAY_ITEMS.map((d,i) => `
     <tr>
       <td style="text-align:center;color:var(--sub);font-weight:700">${d.rank}</td>
-      <td><input class="edit-input" value="${d.name}" data-i="${i}" data-f="name" onchange="updateDisplayRow(this)" style="width:100%;min-width:160px"></td>
+      <td><input class="edit-input" value="${esc(d.name)}" data-i="${i}" data-f="name" onchange="updateDisplayRow(this)" style="width:100%;min-width:160px"></td>
       <td>
         <div class="status-toggle">
           <button class="stbtn present ${d.status==='present'?'active':''}" onclick="setStatus(${i},'present',this)">✅ 有陳列</button>
@@ -1078,8 +1023,9 @@ function renderEditForm() {
           <button class="stbtn poor ${d.status==='poor'?'active':''}" onclick="setStatus(${i},'poor',this)">⚠️ 不佳</button>
         </div>
       </td>
-      <td><input class="edit-input" value="${d.note}" data-i="${i}" data-f="note" onchange="updateDisplayRow(this)" style="width:100%;min-width:160px"></td>
+      <td><input class="edit-input" value="${esc(d.note)}" data-i="${i}" data-f="note" onchange="updateDisplayRow(this)" style="width:100%;min-width:160px"></td>
     </tr>`).join('');
+  }
 
   // 上次儲存時間
   document.getElementById('lastSavedLabel').textContent = LAST_SAVED ? `上次儲存：${LAST_SAVED}` : '尚未儲存';
@@ -1099,10 +1045,13 @@ function setStatus(i, status, el) {
   el.classList.add('active');
 }
 function deleteSalesRow(i) {
-  if (!confirm(`確定刪除「${SALES_DATA[i].name}」？`)) return;
+  if (!SALES_DATA[i]) return;
+  if (!confirm(`確定刪除「${SALES_DATA[i].name || ''}」？`)) return;
   SALES_DATA.splice(i,1);
   SALES_DATA.forEach((d,idx)=>d.rank=idx+1);
-  renderEditForm();
+  if (DISPLAY_ITEMS[i]) DISPLAY_ITEMS.splice(i,1);
+  DISPLAY_ITEMS.forEach((d,idx)=>d.rank=idx+1);
+  refreshAfterDataChange();
 }
 function addSalesRow() {
   SALES_DATA.push({ rank:SALES_DATA.length+1, item_no:'', cat:'03100000', name:'新品名', qty:0, amt:0, catLabel:'充電器' });
@@ -1472,13 +1421,12 @@ function confirmImport() {
   msg.innerHTML = `
     <div style="font-size:48px;margin-bottom:12px">✅</div>
     <div style="font-size:18px;font-weight:700;color:var(--green);margin-bottom:6px">匯入成功！</div>
-    <div style="font-size:13px;color:var(--sub);margin-bottom:20px">已匯入 ${data.length} 筆，陳列狀態已同步。記得點「儲存並套用」</div>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:20px">已匯入 ${data.length} 筆，陳列狀態已同步。資料只在這台電腦，請點「儲存並套用」</div>
     <button class="btn btn-gray" onclick="resetImport()">匯入另一份</button>
   `;
   document.getElementById('importCard').appendChild(msg);
 
-  chartsInited = false;
-  renderStats(); renderTable(); renderDisplayAnalysis(); renderEditForm();
+  refreshAfterDataChange();
   showToast('✅ Excel 匯入完成！請點「儲存並套用」');
 }
 
@@ -1539,10 +1487,12 @@ function loadPhotoFile(file) {
 }
 function removePhoto() {
   pendingPhotoB64 = null;
-  document.getElementById('photoPreviewImg').src = '';
+  PHOTO_B64 = null;
+  document.getElementById('photoPreviewImg').removeAttribute('src');
   document.getElementById('photoPreview').style.display = 'none';
   document.getElementById('photoDrop').style.display = 'block';
   document.getElementById('photoInput').value = '';
+  try { localStorage.removeItem('acc_photo'); } catch(e) {}
 }
 
 // ── 儲存 ──
@@ -1568,6 +1518,7 @@ function saveAll() {
     localStorage.setItem('acc_display', JSON.stringify(DISPLAY_ITEMS));
     localStorage.setItem('acc_period',  JSON.stringify(PERIOD));
     if (PHOTO_B64) localStorage.setItem('acc_photo', PHOTO_B64);
+    else localStorage.removeItem('acc_photo');
     LAST_SAVED = new Date().toLocaleString('zh-TW');
     localStorage.setItem('acc_saved', LAST_SAVED);
   } catch(e) {
@@ -1575,62 +1526,93 @@ function saveAll() {
     return;
   }
 
-  // 重新渲染全頁
-  chartsInited = false;
-  renderStats(); renderTable(); renderDisplayAnalysis(); renderEditForm();
-  showToast('✅ 已儲存！數據已套用至所有頁面');
+  refreshAfterDataChange();
+  showToast('✅ 已儲存！數據只留在這台電腦');
 }
 
 function resetToDefault() {
-  if (!confirm('確定還原為初始預設數據？此操作無法復原。')) return;
-  localStorage.clear();
-  SALES_DATA = JSON.parse(JSON.stringify(DEFAULT_SALES));
-  DISPLAY_ITEMS = JSON.parse(JSON.stringify(DEFAULT_DISPLAY));
-  PERIOD = { ...DEFAULT_PERIOD }; PHOTO_B64 = null; pendingPhotoB64 = null; LAST_SAVED = null;
-  chartsInited = false;
-  renderStats(); renderTable(); renderDisplayAnalysis(); renderEditForm();
-  showToast('↩ 已還原為預設數據');
+  if (!confirm('要清除這台電腦上的銷售、陳列與照片，回到空白狀態嗎？公開網頁本來就沒有內建門市資料。')) return;
+  ['acc_sales','acc_display','acc_period','acc_photo','acc_saved'].forEach(k => localStorage.removeItem(k));
+  SALES_DATA = [];
+  DISPLAY_ITEMS = [];
+  PERIOD = { start: "", end: "" };
+  PHOTO_B64 = null;
+  pendingPhotoB64 = null;
+  LAST_SAVED = null;
+  refreshAfterDataChange();
+  showToast('已清除這台電腦上的資料');
+}
+
+function loadDemoData() {
+  if (hasSales() && !confirm('畫面上的銷售排行會改成示範假資料（貨號 DEMO-，期間 2099）。這不會寫進公開網頁。繼續？')) return;
+  SALES_DATA = JSON.parse(JSON.stringify(DEMO_SALES));
+  DISPLAY_ITEMS = JSON.parse(JSON.stringify(DEMO_DISPLAY));
+  PERIOD = { ...DEMO_PERIOD };
+  refreshAfterDataChange();
+  showToast('已載入示範假資料（DEMO），尚未寫入公開網頁');
+}
+
+function replaceMarked(html, mark, literal) {
+  const start = '/*' + mark + '_START*/';
+  const end = '/*' + mark + '_END*/';
+  const s = html.indexOf(start);
+  const e = html.indexOf(end);
+  if (s < 0 || e < 0 || e < s) throw new Error('找不到 ' + mark);
+  return html.slice(0, s + start.length) + '\n' + literal + '\n' + html.slice(e);
 }
 
 async function exportHTML() {
-  if (!confirm('將目前的銷售數據、陳列狀態和照片嵌入 HTML 並下載。\n下載後請：\n1. 覆蓋 iCloud「配件專區陳列建議」資料夾內的 accessory_dashboard.html\n2. 點兩下桌面的「上傳到GitHub.command」重新部署\n\n確定繼續？')) return;
+  const ok = confirm('將下載「不含銷售資料」的 HTML。\n\n預設銷售、陳列、期間與照片都會是空的，這份可以覆蓋公開網頁。\n目前畫面上的資料仍只留在這台電腦，不會寫進檔案。\n\n確定下載？');
+  if (!ok) return;
+  await buildExport(false);
+}
+
+async function exportHTMLWithData() {
+  const ok = confirm('⚠️ 這份檔案會包含目前的銷售數據、陳列狀態與照片。\n\n只供本機離線備份。\n請勿上傳到 GitHub、GitHub Pages，或任何公開位置。\n\n確定要下載含資料的備份？');
+  if (!ok) return;
+  await buildExport(true);
+}
+
+async function buildExport(includeData) {
   try {
-    showToast('⏳ 正在生成更新版 HTML…');
+    showToast(includeData ? '⏳ 正在生成含資料備份…' : '⏳ 正在生成不含資料的 HTML…');
     const fetchUrl = location.origin + location.pathname;
     const res = await fetch(fetchUrl, { cache: 'no-store' });
     if (!res.ok) throw new Error('無法讀取頁面（' + res.status + '）');
     let html = await res.text();
 
-    // 更新 DEFAULT_PERIOD
-    html = html.replace(
-      /const DEFAULT_PERIOD = \{[^;]+\};/,
-      'const DEFAULT_PERIOD = ' + JSON.stringify(PERIOD) + ';'
-    );
-    // 更新 DEFAULT_SALES
-    html = html.replace(
-      /const DEFAULT_SALES = \[\n[\s\S]*?\n\];/,
-      'const DEFAULT_SALES = ' + JSON.stringify(SALES_DATA, null, 2) + ';'
-    );
-    // 更新 DEFAULT_DISPLAY
-    html = html.replace(
-      /const DEFAULT_DISPLAY = \[\n[\s\S]*?\n\];/,
-      'const DEFAULT_DISPLAY = ' + JSON.stringify(DISPLAY_ITEMS, null, 2) + ';'
-    );
-    // 嵌入照片（若有）
-    if (PHOTO_B64) {
-      html = html.replace(
-        /const BAKED_PHOTO = [^;]+; \/\* BAKED_PHOTO \*\//,
-        'const BAKED_PHOTO = ' + JSON.stringify(PHOTO_B64) + '; /* BAKED_PHOTO */'
-      );
+    const periodLiteral = includeData
+      ? 'const DEFAULT_PERIOD = ' + JSON.stringify({ start: PERIOD.start || '', end: PERIOD.end || '' }) + ';'
+      : 'const DEFAULT_PERIOD = { start: "", end: "" };';
+    const salesLiteral = includeData
+      ? 'const DEFAULT_SALES = ' + JSON.stringify(SALES_DATA, null, 2) + ';'
+      : 'const DEFAULT_SALES = [];';
+    const displayLiteral = includeData
+      ? 'const DEFAULT_DISPLAY = ' + JSON.stringify(DISPLAY_ITEMS, null, 2) + ';'
+      : 'const DEFAULT_DISPLAY = [];';
+
+    html = replaceMarked(html, 'DEFAULT_PERIOD', periodLiteral);
+    html = replaceMarked(html, 'DEFAULT_SALES', salesLiteral);
+    html = replaceMarked(html, 'DEFAULT_DISPLAY', displayLiteral);
+
+    const photoLiteral = (includeData && PHOTO_B64)
+      ? 'const BAKED_PHOTO = ' + JSON.stringify(PHOTO_B64) + '; /* BAKED_PHOTO */'
+      : 'const BAKED_PHOTO = null; /* BAKED_PHOTO */';
+    if (!/const BAKED_PHOTO = [\s\S]*?; \/\* BAKED_PHOTO \*\//.test(html)) {
+      throw new Error('找不到 BAKED_PHOTO');
     }
+    html = html.replace(/const BAKED_PHOTO = [\s\S]*?; \/\* BAKED_PHOTO \*\//, photoLiteral);
+
+    const badge = (!includeData || !fmtPeriod()) ? '尚未匯入銷售期間' : ('銷售期間：' + fmtPeriod());
+    html = html.replace(/(<div class="period-badge">)[\s\S]*?(<\/div>)/, '$1' + badge + '$2');
 
     const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'accessory_dashboard.html';
+    a.download = includeData ? 'accessory_dashboard_PRIVATE_do_not_publish.html' : 'accessory_dashboard.html';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    showToast('✅ 下載完成！覆蓋本機 HTML 後執行上傳腳本即可');
+    showToast(includeData ? '⚠️ 已下載含資料備份，請勿公開' : '✅ 已下載不含資料的 HTML');
   } catch(e) {
     showToast('❌ 匯出失敗：' + e.message);
   }
@@ -1646,14 +1628,21 @@ function showToast(msg) {
 // ═══════════════════════════════════════════
 //  Tab 切換
 // ═══════════════════════════════════════════
-function switchTab(id) {
+function goTab(id) {
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
-  event.target.classList.add('active');
-  if (id==='chart')  { if(!chartsInited){ chartsInited=true; renderCharts(); } else { chartInstances.length&&renderCharts(); } }
+  const tab = document.getElementById('tab-'+id);
+  if (tab) tab.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(el => {
+    if ((el.getAttribute('onclick') || '').includes("'" + id + "'")) el.classList.add('active');
+  });
+  if (id==='chart') { chartsInited = true; renderCharts(); }
   if (id==='display') renderDisplayAnalysis();
-  if (id==='update')  renderEditForm();
+  if (id==='update') renderEditForm();
+  if (id==='recommend') renderRecommendations();
+}
+function switchTab(id) {
+  goTab(id);
 }
 
 // ═══════════════════════════════════════════
@@ -1727,10 +1716,7 @@ async function runAIDetection() {
     setAIBar(100);
     setAIStatus(`✅ 完成！辨識 ${presentCount}/${DISPLAY_ITEMS.length} 項有陳列。請複查並點「儲存並套用」`, '#1a7a3e');
 
-    renderStats();
-    renderTable();
-    renderDisplayAnalysis();
-    renderEditForm();
+    refreshAfterDataChange();
 
     setTimeout(() => {
       document.getElementById('displayEditBody')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1763,6 +1749,7 @@ async function runAIDetection() {
 renderStats();
 renderTable();
 renderDisplayAnalysis();
+renderRecommendations();
 </script>
 </body>
 </html>
